@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Constello — the sky</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0e111b;
+    --ink:#efe7d6;        /* warm cream foreground */
+    --ink-soft:#b8ad97;
+    --ink-faint:#7d7563;
+    --red:#e8584d;        /* the red strings */
+    --hair:rgba(239,231,214,.11);
+    --hair-strong:rgba(239,231,214,.16);
+    --panel-grad:linear-gradient(200deg, rgba(16,18,26,.94), rgba(8,9,14,.97));
+    --panel-shadow:-30px 0 80px rgba(0,0,0,.5);
+    --essence:#e2dac9;
+    --walk:#ddd4c2;
+    --chip-bg:rgba(239,231,214,.02);
+    --thread-line:rgba(232,88,77,.35);
+    --text-glow:rgba(0,0,0,.6);
+    --serif:"Fraunces", Georgia, "Times New Roman", serif;
+    --sans:"Inter Tight", system-ui, -apple-system, sans-serif;
+  }
+  body.light{
+    --bg:#bcae8c;
+    --ink:#2b2620;
+    --ink-soft:#6b6253;
+    --ink-faint:#6a5f47;
+    --red:#b0342a;
+    --hair:rgba(43,38,32,.16);
+    --hair-strong:rgba(43,38,32,.26);
+    --panel-grad:linear-gradient(200deg, rgba(247,242,231,.96), rgba(236,228,210,.98));
+    --panel-shadow:-30px 0 80px rgba(90,78,52,.20);
+    --essence:#3a342a;
+    --walk:#433d31;
+    --chip-bg:rgba(43,38,32,.03);
+    --thread-line:rgba(176,52,42,.45);
+    --text-glow:rgba(247,242,231,.85);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink)}
+  body{font-family:var(--sans);-webkit-font-smoothing:antialiased;cursor:default}
+  canvas{display:block;position:fixed;inset:0}
+
+  /* ---- wordmark ---- */
+  .mark{
+    position:fixed;top:26px;left:30px;z-index:5;pointer-events:none;
+    opacity:0;animation:rise 1.6s 0.3s ease forwards;
+  }
+  .mark h1{
+    font-family:var(--serif);font-weight:400;font-size:25px;letter-spacing:.5px;
+    color:var(--ink);text-shadow:0 0 24px var(--text-glow);
+  }
+  .mark p{
+    font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--ink-faint);margin-top:5px;
+  }
+
+  /* ---- bottom hint ---- */
+  .hint{
+    position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:5;
+    font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint);
+    pointer-events:none;opacity:0;animation:rise 1.6s 1.1s ease forwards;text-align:center;
+  }
+  .hint b{color:var(--ink-soft);font-weight:500}
+
+  /* ---- reading panel (the essence card) ---- */
+  .panel{
+    position:fixed;top:0;right:0;height:100%;width:min(440px,90vw);z-index:10;
+    background:var(--panel-grad);
+    border-left:1px solid var(--hair);
+    backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);
+    box-shadow:var(--panel-shadow);
+    transform:translateX(102%);transition:transform .6s cubic-bezier(.22,.61,.36,1);
+    display:flex;flex-direction:column;
+  }
+  .panel.open{transform:translateX(0)}
+  .panel .scroll{overflow-y:auto;padding:40px 38px 48px;height:100%}
+  .panel .scroll::-webkit-scrollbar{width:7px}
+  .panel .scroll::-webkit-scrollbar-thumb{background:rgba(239,231,214,.12);border-radius:4px}
+
+  .close{
+    position:absolute;top:22px;right:24px;z-index:2;cursor:pointer;
+    width:30px;height:30px;border:1px solid var(--hair-strong);border-radius:50%;
+    color:var(--ink-soft);background:transparent;font-size:15px;line-height:28px;text-align:center;
+    transition:.25s;
+  }
+  .close:hover{color:var(--ink);border-color:var(--ink-faint)}
+
+  .eyebrow{font-size:10.5px;letter-spacing:.26em;text-transform:uppercase;color:var(--ink-faint)}
+  .cname{
+    font-family:var(--serif);font-style:italic;font-weight:400;font-size:34px;line-height:1.12;
+    margin:9px 0 4px;color:var(--ink);
+  }
+  .meta{font-size:12.5px;color:var(--ink-faint);letter-spacing:.04em;margin-bottom:22px}
+  .rule{height:1px;background:var(--hair);margin:22px 0}
+
+  .essence{font-size:15px;line-height:1.62;color:var(--essence);font-weight:400}
+  .essence .q{color:var(--ink);font-style:italic}
+
+  .sect-label{
+    font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-faint);
+    margin-bottom:14px;display:flex;align-items:center;gap:9px;
+  }
+  .sect-label .dot{width:7px;height:7px;border-radius:50%;background:var(--red);box-shadow:0 0 10px var(--red)}
+
+  .thread{margin-bottom:16px;padding-left:15px;border-left:1px solid var(--thread-line)}
+  .thread .pair{font-size:13.5px;color:var(--ink);line-height:1.4}
+  .thread .pair em{font-style:normal;color:var(--ink-soft)}
+  .thread .pair .x{color:var(--red);padding:0 7px;font-style:normal}
+  .thread .why{font-size:13px;color:var(--ink-faint);line-height:1.5;margin-top:5px}
+
+  .walk{font-size:14.5px;line-height:1.62;color:var(--walk);margin-top:6px}
+
+  .nodes{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
+  .chip{
+    font-size:12px;color:var(--ink-soft);padding:5px 11px;border-radius:20px;
+    border:1px solid var(--hair-strong);background:var(--chip-bg);
+    display:flex;align-items:center;gap:7px;
+  }
+  .chip .tdot{width:6px;height:6px;border-radius:50%}
+
+  .panel .foot{
+    font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint);
+    margin-top:30px;opacity:.8;display:flex;flex-direction:column;gap:13px;line-height:1.55;
+  }
+
+  .forming{font-size:14px;color:var(--ink-faint);font-style:italic;line-height:1.6}
+
+  /* ---- theme toggle ---- */
+  .theme-toggle{
+    position:fixed;bottom:22px;right:26px;z-index:6;cursor:pointer;
+    font-family:var(--sans);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--ink-faint);background:transparent;border:1px solid var(--hair-strong);
+    padding:8px 15px;border-radius:20px;transition:color .25s,border-color .25s;
+    opacity:0;animation:rise 1.6s 1.1s ease forwards;
+  }
+  .theme-toggle:hover{color:var(--ink);border-color:var(--ink-faint)}
+
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .mark,.hint{transform:translateY(8px)}
+  .hint{transform:translate(-50%,8px)}
+</style>
+</head>
+<body>
+<canvas id="sky"></canvas>
+
+<div class="mark">
+  <h1>Constello</h1>
+  <p>we all collect things</p>
+</div>
+
+<div class="hint">drag to pan &nbsp;·&nbsp; scroll to zoom &nbsp;·&nbsp; tap a <b>constellation</b> to read it</div>
+
+<button class="theme-toggle" id="themeBtn">&#9728; day</button>
+
+<div class="panel" id="panel">
+  <button class="close" id="close">&times;</button>
+  <div class="scroll" id="panelBody"></div>
+</div>
+
+<script>
+/* ============================================================
+   Constello — Sky sketch (Phase 1 visual identity)
+   Synthetic data only. Never persisted. For aesthetic review.
+   ============================================================ */
+
+// ---- themes: dark = observatory night; light = aged star-atlas on paper ----
+// (star color-by-type is a placeholder; CREDENTIALS.md §36 wants hue from the reading)
+// Emulate constellations, don't recreate them: stars are bright nodes of meaning,
+// luminous in EVERY theme. Dark = gentle night (never black). Light = luminous dawn (never paper).
+const THEMES = {
+  dark:{
+    bg:'#12151f',
+    neb:[[-300,-200,0.70,'#1b2338',0.50],[600,450,0.55,'#2a2030',0.36],[0,0,0.50,'#172132',0.46]],
+    dust:'#cfd6e8', dustMul:0.6,
+    core:'#fff8ec', forming:'#e9e2d0',
+    tints:{pinterest:'#ffd29a',lastfm:'#bcd2ff',memory:'#fff2d8',stickers:'#ffc2d8'},
+    chipTints:{pinterest:'#ffd6a0',lastfm:'#bcd2ff',memory:'#fff2d8',stickers:'#ffc2d8'},
+    haloMul:0.6, haloMax:0.9, bloomMul:0.5, bloomMax:0.72,
+    line:'239,231,214', label:'#efe7d6', youLabel:'#ffe6b8',
+    ring:'rgba(255,226,168,', shadow:'rgba(0,0,0,0.7)',
+    red:'232,88,77', redDot:'#ff7a6e', redBlur:14,
+  },
+  light:{
+    bg:'#bcae8c',                                   // warm aged parchment — medium-toned so white stars still read
+    neb:[[-300,-200,0.70,'#cdbb92',0.32],[600,450,0.55,'#c7a98c',0.24],[0,0,0.50,'#d9caa1',0.30]],
+    dust:'#efe6d0', dustMul:0.4,
+    core:'#fffaf0', forming:'#fff3df',              // stars stay white on the parchment
+    tints:{pinterest:'#ffcf86',lastfm:'#cfdcff',memory:'#fff2cf',stickers:'#ffc6d6'},
+    chipTints:{pinterest:'#a85c25',lastfm:'#39507f',memory:'#7c6433',stickers:'#a23f62'}, // deep ink, for the parchment panel
+    haloMul:0.5, haloMax:0.82, bloomMul:0.42, bloomMax:0.6,
+    line:'74,60,38', label:'#3a3020', youLabel:'#7a4716',   // dark ink lines + names, like an antique star chart
+    ring:'rgba(150,100,40,', shadow:'rgba(245,239,224,0.6)',
+    red:'168,46,32', redDot:'#8f2317', redBlur:7,
+  },
+};
+let theme = THEMES.dark;
+const tint = (type)=> theme.tints[type];           // star/halo colour
+const chipTint = (type)=> theme.chipTints[type];   // reading-panel dot colour
+const TYPE_NAME = { pinterest:'board', lastfm:'listening', memory:'memory', stickers:'pack' };
+
+// ---- seeded rng ----
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+// ---- YOU ----
+const YOU = {
+  name:'cassette sun', you:true,
+  essence:`<span class="q">cassette sun</span> keeps the end of things — late light, objects left out long enough to belong to the weather, songs that get loud only to stay sad about it. The piano never resolves on purpose. Underneath the boards and the listening is someone who wants to be left alone and is honest enough to admit they don't fully mean it, who keeps dreaming the same water. The brave tired animals are the self-portrait: worn out, going anyway.`,
+  nodes:[
+    {id:'cs_rooms', label:'rooms at the end of the day', type:'pinterest'},
+    {id:'cs_rain',  label:'things left out in the rain',  type:'pinterest'},
+    {id:'cs_loud',  label:'the quiet loud ones',          type:'lastfm'},
+    {id:'cs_piano', label:"piano that doesn't resolve",   type:'lastfm'},
+    {id:'cs_alone', label:'wanting to be left alone and not', type:'memory'},
+    {id:'cs_water', label:'the same dream about water',    type:'memory'},
+    {id:'cs_anim',  label:'tired animals being brave',     type:'stickers'},
+  ],
+};
+
+// ---- the read cohort (rich constellations) ----
+const RICH = [
+  {
+    name:'a quiet hour',
+    essence:`<span class="q">a quiet hour</span> collects the hour before anyone else is awake — one window, one cup, light that hasn't been used by anyone yet. The jazz is all the inward kind, played like the musician forgot the room was there. What it carries underneath isn't a love of calm; it's a need for a self that no one is currently looking at, a self that only exists before it's perceived. The memory threads make this raw — being seen is named as a cost. So the rooms are never just pretty. They're the only place this person gets to be no one's idea of themselves.`,
+    nodes:[
+      {id:'qh_window',label:'rooms with one window',type:'pinterest'},
+      {id:'qh_light', label:'light no one has used yet',type:'pinterest'},
+      {id:'qh_cafe',  label:'the empty cafe at opening',type:'pinterest'},
+      {id:'qh_evans', label:'Bill Evans, alone in it',type:'lastfm'},
+      {id:'qh_inward',label:'jazz played inward',type:'lastfm'},
+      {id:'qh_perc',  label:'the dread of being perceived',type:'memory'},
+      {id:'qh_self',  label:"a self before it's seen",type:'memory'},
+      {id:'qh_cat',   label:'cats mid-nap',type:'stickers'},
+    ],
+    threads:[
+      {from:'cs_rooms',to:'qh_window',why:'Both keep a room for the hour no one else is in it — yours at dusk, theirs at dawn. The same need for a self before or after being seen.'},
+      {from:'cs_alone',to:'qh_perc',  why:"You've each named the cost of being looked at, and built a whole aesthetic to buy back a little unwatched time."},
+      {from:'cs_piano',to:'qh_inward',why:'Music played like the room isn\'t there. Neither of you wants the song to perform; you want it to keep you company.'},
+    ],
+    walk:`You and a quiet hour are bookends of the same empty room — you arrive at dusk, they at dawn, and both of you are really there for the same reason: a few minutes of being no one's idea of yourselves. Where you keep things out in the rain until the weather claims them, they keep the light before anyone's used it. The hour is different; the hunger is the same. If you ever met, neither of you would need the room explained.`,
+  },
+  {
+    name:'the long blue',
+    essence:`<span class="q">the long blue</span> keeps a single color and a single distance — the horizon you can't get to, weather happening to someone else, the blue of a photograph that's already a memory of itself. The shoegaze and the long techno are both ways of staying inside one feeling far past when you'd be expected to leave it. Underneath is a longing that has stopped expecting to be answered and gotten comfortable, almost too comfortable, in the wanting itself. The memory file holds an unfinished person at a distance. the long blue has made the distance beautiful — its gift, and possibly the thing keeping it where it is.`,
+    nodes:[
+      {id:'lb_hor',  label:"the horizon you can't reach",type:'pinterest'},
+      {id:'lb_cyan', label:'cyanotype blue',type:'pinterest'},
+      {id:'lb_storm',label:'weather happening to someone else',type:'pinterest'},
+      {id:'lb_shoe', label:"shoegaze you don't leave",type:'lastfm'},
+      {id:'lb_tech', label:'ambient techno, one feeling held',type:'lastfm'},
+      {id:'lb_unf',  label:'an unfinished person, kept far',type:'memory'},
+      {id:'lb_want', label:'comfortable in the wanting',type:'memory'},
+      {id:'lb_boat', label:'tiny boats',type:'stickers'},
+    ],
+    threads:[
+      {from:'cs_water',to:'lb_hor', why:'The same water — yours surfacing in sleep, theirs kept at arm\'s length on every board. A longing neither of you expects to be answered.'},
+      {from:'cs_loud', to:'lb_shoe',why:"Both of you stay inside one feeling far past when you'd be told to leave it, and turn it up rather than out."},
+    ],
+    walk:`the long blue has done on purpose what you do in your sleep — taken the water and put it at a distance you can love. You're both fluent in staying inside a feeling longer than is strictly good for you. The difference worth feeling: they've made the distance beautiful and gotten comfortable there; your version still wakes you up. That gap is the interesting part of the resonance, not the likeness.`,
+  },
+  {
+    name:'lantern, unlit',
+    essence:`<span class="q">lantern, unlit</span> gathers warmth that has to be tended — fire, candle, the lamp you light yourself rather than the switch you flip. The music is all hearth: hymns, lo-fi that crackles like a recording made in a kitchen. What it carries is less a love of cozy than a specific fear, named gently in the memory file, of the dark you face alone. So the warmth is always small and always kept by hand, because a tended light means someone is there tending it. The name is the whole thing — a lantern that hasn't been lit yet, holding the readiness more than the flame. lantern is waiting for a reason to light it that involves another person.`,
+    nodes:[
+      {id:'ln_cand',label:'light you tend by hand',type:'pinterest'},
+      {id:'ln_hear',label:'pre-electric rooms',type:'pinterest'},
+      {id:'ln_hymn',label:'hymns',type:'lastfm'},
+      {id:'ln_lofi',label:'lo-fi that crackles like a kitchen',type:'lastfm'},
+      {id:'ln_dark',label:'the dark you face alone',type:'memory'},
+      {id:'ln_home',label:'warmth that needs tending',type:'memory'},
+      {id:'ln_crea',label:'creatures holding candles',type:'stickers'},
+    ],
+    threads:[
+      {from:'cs_anim', to:'ln_crea',why:'The same little figure in both of you — worn out, going anyway, carrying its own small light.'},
+      {from:'cs_alone',to:'ln_dark',why:'You both want solitude and don\'t want to be alone in it. The contradiction is the honest part.'},
+    ],
+    walk:`You and lantern, unlit are the same admission made two ways: I want to be left alone, and I am afraid of the dark. Your tired brave animals and their candle-holding creatures are the same self-portrait — small, worn, lighting the thing by hand anyway. lantern is waiting for a reason to light it that has someone else in it. You'd be a reason.`,
+  },
+  {
+    name:'thornfield',
+    essence:`<span class="q">thornfield</span> keeps returning to the place where things are being taken back — ruins with ferns in the mortar, a piano left in a field, the garden that outlived its gardener. Read across the boards and the listening, it isn't a taste for decay so much as a refusal to call the unfinished a failure. The drones held under the folk songs do the same work: they let a thing go soft at the edges without ending it. A tension worth naming — the memory file is anxious about stillness, about being passed over, while the whole aesthetic is built from things that have stopped and kept their dignity anyway. thornfield is trying to believe of itself what it already believes about the ruins.`,
+    nodes:[
+      {id:'tf_fern', label:'ferns in the mortar',type:'pinterest'},
+      {id:'tf_piano',label:'a piano left in a field',type:'pinterest'},
+      {id:'tf_gard', label:'the garden that outlived its gardener',type:'pinterest'},
+      {id:'tf_drone',label:'drones under the folk songs',type:'lastfm'},
+      {id:'tf_folk', label:'folk that goes soft at the edges',type:'lastfm'},
+      {id:'tf_still',label:'the fear of being passed over',type:'memory'},
+      {id:'tf_dec',  label:'decay is not failure',type:'memory'},
+      {id:'tf_frog', label:'mossy frogs',type:'stickers'},
+    ],
+    threads:[
+      {from:'cs_rain',to:'tf_fern',why:'Both of you love what the weather has been allowed to claim — the object that kept its dignity by being left.'},
+    ],
+    walk:`thornfield refuses to call the unfinished a failure, and your whole collection is unfinished things left out on purpose. You'd recognize each other fast at the surface. The deeper kinship is in the refusal: neither of you thinks a stopped thing has lost. Where you'd diverge is mood — thornfield is anxious about stillness while you've half made peace with the end of the day. Worth a conversation, not a foregone one.`,
+  },
+  {
+    name:'paper saints',
+    essence:`<span class="q">paper saints</span> collects holiness that's been cheapened and loves it more for the cheapening — the prayer card from a gas station, the glitter halo, the marginal devil drawn by a bored monk. The baroque-to-hyperpop swing is the same move: maximal sincerity that protects itself by being too much to take entirely seriously. The memory file gives it away — a real faith that got embarrassed somewhere and learned to wear irony so it could keep believing without being caught believing. paper saints isn't mocking the sacred. It's the only way this person has found to keep the sacred close without having to defend it. The kitsch is the disguise devotion wears to survive.`,
+    nodes:[
+      {id:'ps_marg',label:'marginal devils, bored monks',type:'pinterest'},
+      {id:'ps_card',label:'gas-station prayer cards',type:'pinterest'},
+      {id:'ps_lot', label:'lotería',type:'pinterest'},
+      {id:'ps_bar', label:'baroque excess',type:'lastfm'},
+      {id:'ps_hyp', label:'hyperpop sincerity',type:'lastfm'},
+      {id:'ps_iro', label:'irony as armor',type:'memory'},
+      {id:'ps_faith',label:'faith embarrassed by itself',type:'memory'},
+      {id:'ps_hand',label:'glittery praying hands',type:'stickers'},
+    ],
+    threads:[
+      {from:'cs_loud',to:'ps_hyp',why:'Both of you turn the volume up to protect something tender — you to stay sad, they to keep believing without getting caught at it.'},
+    ],
+    walk:`paper saints wears irony so it can keep something sincere alive; you turn songs loud so you're allowed to stay sad in them. Different disguise, same instinct — make it too much so no one asks you to defend the soft thing underneath. You'd clock each other's armor immediately, which is its own kind of intimacy.`,
+  },
+  {
+    name:'marrow',
+    essence:`<span class="q">marrow</span> goes straight for the body and what's kept inside it — bone, reliquary, the saint's preserved hand, the cut of meat named like a prayer. The listening swings between sacred choral and the most violent music available, and the through-line isn't shock; it's that both treat the body as the holy and disgusting thing it is, refusing to pick one. The memory file circles devotion and death without much flinch. marrow is a person trying to hold reverence and rot in the same hand, who finds the squeamish middle dishonest. The dancing skeletons aren't morbid here — they're the joke a person makes when they've actually made peace with it, or wants to.`,
+    nodes:[
+      {id:'mr_relic',label:"the saint's preserved hand",type:'pinterest'},
+      {id:'mr_anat', label:'anatomical plates',type:'pinterest'},
+      {id:'mr_cut',  label:'cuts named like prayers',type:'pinterest'},
+      {id:'mr_choir',label:'sacred choral',type:'lastfm'},
+      {id:'mr_grind',label:'the most violent music available',type:'lastfm'},
+      {id:'mr_dev',  label:'reverence and rot, one hand',type:'memory'},
+      {id:'mr_peace',label:'made peace with it (wants to)',type:'memory'},
+      {id:'mr_skel', label:'skeletons dancing',type:'stickers'},
+    ],
+    threads:[
+      {from:'cs_piano',to:'mr_choir',why:'Both refuse the comfortable resolution — yours by never landing the chord, theirs by holding reverence and violence in one hand.'},
+    ],
+    walk:`This one is thinner, and the system isn't going to pretend otherwise. You and marrow share a refusal of the easy resolution, but you reach for it from far apart — you toward the soft unfinished, marrow toward the body's reverent disgust. There's a thread here. There isn't a whole rope. Sometimes the honest read is "adjacent, not kin," and this is closer to that.`,
+  },
+];
+
+// ---- procedural rest-of-cohort names (synthesis "forming") ----
+const PROC_NAMES = ['the undertow','salt & cedar','margin notes','a borrowed coat','nocturne, no.4','dust on the lens',
+  'half-remembered','the patient kind','low tide','folded maps','an open window in winter','glasshouse',
+  'the slow channel','minor key','ash & ember','quietly, then','the far shelf','rain on tin','blue hour','tender machine','the long way home','overripe'];
+
+// =================== build the world ===================
+const rng = mulberry32(20260528);
+const constellations = [];
+
+function makeNodes(list, cx, cy, seed){
+  const r = mulberry32(seed);
+  const nodes = list.map(n=>({...n}));
+  const N = nodes.length;
+  nodes.forEach((nd,i)=>{
+    const ang = (i/N)*Math.PI*2 + r()*0.9;
+    const rad = 34 + r()*92;
+    nd.x = cx + Math.cos(ang)*rad;
+    nd.y = cy + Math.sin(ang)*rad*0.92;
+    nd.size = 1.1 + r()*2.4;
+    nd.bright = 0.72 + r()*0.28;   // bright nodes of meaning — keep a high floor, never faint
+    nd.tw = r()*Math.PI*2;        // twinkle phase
+    nd.tws = 0.5 + r()*1.4;       // twinkle speed
+  });
+  // sparse nearest-neighbour edges (constellation lines)
+  const edges=[];
+  for(let i=0;i<N;i++){
+    const d=[];
+    for(let j=0;j<N;j++) if(i!==j) d.push([j,(nodes[i].x-nodes[j].x)**2+(nodes[i].y-nodes[j].y)**2]);
+    d.sort((a,b)=>a[1]-b[1]);
+    const k=1+(r()<0.5?1:0);
+    for(let m=0;m<k&&m<d.length;m++){const j=d[m][0];if(!edges.some(e=>(e[0]===j&&e[1]===i)))edges.push([i,j]);}
+  }
+  return {nodes,edges};
+}
+
+function placeConstellation(spec, cx, cy, seed){
+  const built = makeNodes(spec.nodes||[], cx, cy, seed);
+  const c = {...spec, cx, cy, ...built};
+  c.nodeById = {};
+  c.nodes.forEach(n=>c.nodeById[n.id]=n);
+  constellations.push(c);
+  return c;
+}
+
+// place YOU at center
+const YOUC = placeConstellation(YOU, 0, 0, 7);
+
+// place rich ones in an inner ring around you
+RICH.forEach((spec,i)=>{
+  const ang = (i/RICH.length)*Math.PI*2 + 0.35;
+  const rad = 470 + rng()*230;
+  placeConstellation(spec, Math.cos(ang)*rad, Math.sin(ang)*rad*0.85, 100+i*13);
+});
+
+// scatter procedural ones in the outer field (rejection-sample for spacing)
+const placed = constellations.map(c=>[c.cx,c.cy]);
+PROC_NAMES.forEach((nm,i)=>{
+  let x,y,ok=false,tries=0;
+  while(!ok && tries++<60){
+    const ang=rng()*Math.PI*2, rad=520+rng()*1180;
+    x=Math.cos(ang)*rad; y=Math.sin(ang)*rad*0.82;
+    ok = placed.every(p=>((p[0]-x)**2+(p[1]-y)**2) > 300*300);
+  }
+  placed.push([x,y]);
+  const cnt = 6 + Math.floor(rng()*9);
+  const types = Object.keys(THEMES.dark.tints);
+  const nodes = Array.from({length:cnt},(_,k)=>({id:`p${i}_${k}`,label:'',type:types[Math.floor(rng()*4)]}));
+  placeConstellation({name:nm, forming:true, nodes}, x, y, 5000+i*7);
+});
+
+// =================== rendering ===================
+const cv = document.getElementById('sky');
+const ctx = cv.getContext('2d');
+let W,H,DPR;
+function resize(){
+  DPR = Math.min(window.devicePixelRatio||1, 2);
+  W = window.innerWidth; H = window.innerHeight;
+  cv.width = W*DPR; cv.height = H*DPR;
+  cv.style.width=W+'px'; cv.style.height=H+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+window.addEventListener('resize', resize); resize();
+
+// glow sprites (one per tint)
+const glowCache = {};
+function glow(color){
+  if(glowCache[color]) return glowCache[color];
+  const s=64, off=document.createElement('canvas'); off.width=off.height=s;
+  const g=off.getContext('2d');
+  const grd=g.createRadialGradient(s/2,s/2,0,s/2,s/2,s/2);
+  grd.addColorStop(0,color);
+  grd.addColorStop(0.08,color);
+  grd.addColorStop(0.35,'rgba(0,0,0,0)');
+  grd.addColorStop(1,'rgba(0,0,0,0)');
+  g.fillStyle=grd; g.fillRect(0,0,s,s);
+  glowCache[color]=off; return off;
+}
+
+// background dust
+const dust = Array.from({length:520},()=>({
+  x:(rng()-0.5)*5200, y:(rng()-0.5)*5200,
+  s:rng()*1.1+0.2, a:rng()*0.5+0.1, tw:rng()*6.28, tws:0.4+rng()*1.6
+}));
+
+// camera
+let camX=0, camY=0, scale= Math.min(W,H)/3400;
+const fitScale = Math.min(W,H)/3400;
+function sx(wx){return W/2 + (wx-camX)*scale;}
+function sy(wy){return H/2 + (wy-camY)*scale;}
+
+let selected=null, hovered=null;
+
+function draw(t){
+  // --- background wash ---
+  ctx.fillStyle=theme.bg; ctx.fillRect(0,0,W,H);
+  // nebula tints
+  const neb=(x,y,r,col,a)=>{const g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,col);g.addColorStop(1,'rgba(0,0,0,0)');ctx.globalAlpha=a;ctx.fillStyle=g;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;};
+  for(const [nx,ny,rf,col,a] of theme.neb) neb(sx(nx),sy(ny),Math.max(W,H)*rf,col,a);
+
+  // --- dust (parallax) ---
+  const pcamx=camX*0.45, pcamy=camY*0.45;
+  ctx.fillStyle=theme.dust;
+  for(const d of dust){
+    const x=W/2+(d.x-pcamx)*scale, y=H/2+(d.y-pcamy)*scale;
+    if(x<-20||x>W+20||y<-20||y>H+20) continue;
+    const tw=0.6+0.4*Math.sin(t*0.001*d.tws+d.tw);
+    ctx.globalAlpha=d.a*tw*theme.dustMul;
+    ctx.beginPath(); ctx.arc(x,y,d.s*Math.max(scale*1.6,0.4),0,6.28); ctx.fill();
+  }
+  ctx.globalAlpha=1;
+
+  // --- constellations ---
+  for(const c of constellations){
+    const isSel = selected===c, isHov = hovered===c;
+    const anySel = !!selected;
+    let dim = 1;
+    if(anySel && !isSel && !(selected&&selected.you) ){
+      // when something selected, dim others — but keep YOU lit if a rich one is selected (we draw strings to it)
+      dim = (c.you) ? 0.5 : 0.18;
+    }
+    if(anySel && selected.you){ dim = isSel?1:0.3; }
+
+    // constellation lines
+    ctx.lineWidth = Math.max(scale*0.9,0.5);
+    ctx.strokeStyle = `rgba(${theme.line},${(0.10+(isSel||isHov?0.20:0))*dim})`;
+    ctx.beginPath();
+    for(const [i,j] of c.edges){
+      ctx.moveTo(sx(c.nodes[i].x),sy(c.nodes[i].y));
+      ctx.lineTo(sx(c.nodes[j].x),sy(c.nodes[j].y));
+    }
+    ctx.stroke();
+
+    // stars
+    for(const n of c.nodes){
+      const x=sx(n.x), y=sy(n.y);
+      if(x<-40||x>W+40||y<-40||y>H+40) continue;
+      const tw = 0.82+0.18*Math.sin(t*0.001*n.tws+n.tw);   // gentle twinkle, never dims to a strain
+      const b = n.bright*tw*dim*(isSel||isHov?1.25:1);
+      const col = c.forming ? theme.forming : tint(n.type);
+      const gsize = (n.size*(isSel?6.5:5.2))*Math.max(scale*1.35,0.55);
+      // tinted halo (kept subtle so the point stays a point)
+      ctx.globalAlpha = Math.min(b*theme.haloMul,theme.haloMax);
+      ctx.drawImage(glow(col), x-gsize, y-gsize, gsize*2, gsize*2);
+      // crisp star core
+      const cr = Math.max(n.size*scale*1.5*(isSel?1.35:1), 1.0);
+      ctx.globalAlpha = Math.min(b*1.15,1);
+      ctx.fillStyle = theme.core;
+      ctx.beginPath(); ctx.arc(x,y,cr,0,6.28); ctx.fill();
+      // faint colored bloom right at the core for temperature
+      ctx.globalAlpha = Math.min(b*theme.bloomMul,theme.bloomMax);
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(x,y,cr*1.8,0,6.28); ctx.fill();
+    }
+    ctx.globalAlpha=1;
+
+    // chosen-name label
+    const showLabel = isSel || isHov || c.you || (!c.forming && scale>fitScale*1.35) || scale>fitScale*2.2;
+    if(showLabel){
+      const lx=sx(c.cx), ly=sy(c.cy)+ (c.you?0:0);
+      const labelY = sy(Math.max(...c.nodes.map(n=>n.y))) + 22;
+      ctx.globalAlpha = Math.min((isSel||isHov?0.95:0.5)*dim + (isSel?0.05:0),1);
+      ctx.font = `italic 500 ${Math.max(13, 15*Math.min(scale/fitScale,1.6))}px Fraunces, serif`;
+      ctx.fillStyle = c.you ? theme.youLabel : theme.label;
+      ctx.textAlign='center';
+      ctx.shadowColor=theme.shadow; ctx.shadowBlur=12;
+      ctx.fillText((c.you?'you · ':'')+c.name, lx, labelY);
+      ctx.shadowBlur=0;
+      ctx.globalAlpha=1;
+    }
+
+    // "you" ring
+    if(c.you){
+      ctx.globalAlpha=0.5+0.2*Math.sin(t*0.0015);
+      ctx.strokeStyle=theme.ring+'0.4)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.arc(sx(c.cx),sy(c.cy), 150*scale,0,6.28); ctx.stroke();
+      ctx.globalAlpha=1;
+    }
+  }
+
+  // --- red resonance strings (pairwise read) ---
+  if(selected && !selected.you && selected.threads){
+    const dash = (t*0.04)% 24;
+    for(const th of selected.threads){
+      const a = YOUC.nodeById[th.from], b = selected.nodeById[th.to];
+      if(!a||!b) continue;
+      const ax=sx(a.x),ay=sy(a.y),bx=sx(b.x),by=sy(b.y);
+      const mx=(ax+bx)/2, my=(ay+by)/2 - Math.hypot(bx-ax,by-ay)*0.16;
+      // glow underlay
+      ctx.strokeStyle=`rgba(${theme.red},0.9)`;
+      ctx.shadowColor=`rgba(${theme.red},0.9)`; ctx.shadowBlur=theme.redBlur; ctx.lineWidth=1.6;
+      ctx.setLineDash([7,17]); ctx.lineDashOffset=-dash;
+      ctx.beginPath(); ctx.moveTo(ax,ay); ctx.quadraticCurveTo(mx,my,bx,by); ctx.stroke();
+      ctx.setLineDash([]); ctx.shadowBlur=0;
+      // endpoint dots
+      for(const p of [[ax,ay],[bx,by]]){
+        ctx.fillStyle=theme.redDot; ctx.globalAlpha=0.95;
+        ctx.beginPath(); ctx.arc(p[0],p[1],2.6,0,6.28); ctx.fill();
+        ctx.globalAlpha=0.3; ctx.beginPath(); ctx.arc(p[0],p[1],6,0,6.28); ctx.fill();
+        ctx.globalAlpha=1;
+      }
+    }
+  }
+
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+
+// =================== interaction ===================
+let dragging=false, moved=false, lastX=0, lastY=0;
+
+function pick(px,py){
+  let best=null, bd=1e9;
+  for(const c of constellations){
+    const d=(sx(c.cx)-px)**2+(sy(c.cy)-py)**2;
+    if(d<bd){bd=d;best=c;}
+  }
+  const thresh = Math.max(110*scale, 46);
+  return bd < thresh*thresh ? best : null;
+}
+
+cv.addEventListener('mousedown',e=>{dragging=true;moved=false;lastX=e.clientX;lastY=e.clientY;});
+window.addEventListener('mouseup',e=>{
+  if(dragging && !moved){
+    const c=pick(e.clientX,e.clientY);
+    if(c) selectConstellation(c); else deselect();
+  }
+  dragging=false;
+});
+window.addEventListener('mousemove',e=>{
+  if(dragging){
+    const dx=e.clientX-lastX, dy=e.clientY-lastY;
+    if(Math.abs(dx)+Math.abs(dy)>3) moved=true;
+    camX-=dx/scale; camY-=dy/scale; lastX=e.clientX; lastY=e.clientY;
+  } else {
+    const c=pick(e.clientX,e.clientY);
+    hovered=c;
+    cv.style.cursor = c?'pointer':'default';
+  }
+});
+cv.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const wx=camX+(e.clientX-W/2)/scale, wy=camY+(e.clientY-H/2)/scale;
+  const f=Math.exp(-e.deltaY*0.0014);
+  scale=Math.max(fitScale*0.55, Math.min(fitScale*6, scale*f));
+  camX=wx-(e.clientX-W/2)/scale; camY=wy-(e.clientY-H/2)/scale;
+},{passive:false});
+
+// touch (basic pan + tap)
+let tStart=null;
+cv.addEventListener('touchstart',e=>{if(e.touches.length===1){tStart={x:e.touches[0].clientX,y:e.touches[0].clientY,t:Date.now()};lastX=tStart.x;lastY=tStart.y;moved=false;}},{passive:true});
+cv.addEventListener('touchmove',e=>{if(e.touches.length===1){const x=e.touches[0].clientX,y=e.touches[0].clientY;const dx=x-lastX,dy=y-lastY;if(Math.abs(dx)+Math.abs(dy)>4)moved=true;camX-=dx/scale;camY-=dy/scale;lastX=x;lastY=y;}},{passive:true});
+cv.addEventListener('touchend',e=>{if(tStart&&!moved){const c=pick(tStart.x,tStart.y);if(c)selectConstellation(c);else deselect();}tStart=null;},{passive:true});
+
+// =================== panel ===================
+const panel=document.getElementById('panel');
+const panelBody=document.getElementById('panelBody');
+document.getElementById('close').onclick=deselect;
+
+function tdot(type){return `<span class="tdot" style="background:${chipTint(type)};box-shadow:0 0 6px ${chipTint(type)}"></span>`;}
+
+function nodeChips(c){
+  return `<div class="nodes">${c.nodes.filter(n=>n.label).map(n=>`<span class="chip">${tdot(n.type)}${n.label}</span>`).join('')}</div>`;
+}
+
+function selectConstellation(c){
+  selected=c;
+  let html='';
+  if(c.forming){
+    html = `
+      <p class="eyebrow">a constellation, forming</p>
+      <h2 class="cname">${c.name}</h2>
+      <p class="meta">${c.nodes.length} collected nodes · synthesis not yet read</p>
+      <div class="rule"></div>
+      <p class="forming">This star is in the sky but its reading hasn't been compiled yet — the cohort is still small, and Constello only reads what's really there. No placeholder essence is written. When ${c.name} connects enough, the synthesis will appear here, and a thread to you will be drawn if one exists.</p>
+    `;
+  } else if(c.you){
+    html = `
+      <p class="eyebrow">your constellation</p>
+      <h2 class="cname">${c.name}</h2>
+      <p class="meta">${c.nodes.length} collections read · this is how the sky reads you</p>
+      <div class="rule"></div>
+      <p class="essence">${c.essence}</p>
+      <div class="rule"></div>
+      <p class="sect-label">what you submitted</p>
+      ${nodeChips(c)}
+      <p class="foot"><span>no counts · no followers · no profile</span><span>you compose for the reading — you don't write it</span></p>
+    `;
+  } else {
+    const threads = (c.threads||[]).map(th=>{
+      const a=YOUC.nodeById[th.from], b=c.nodeById[th.to];
+      return `<div class="thread"><div class="pair"><em>${a?a.label:''}</em><span class="x">&#10539;</span><em>${b?b.label:''}</em></div><div class="why">${th.why}</div></div>`;
+    }).join('');
+    html = `
+      <p class="eyebrow">a constellation</p>
+      <h2 class="cname">${c.name}</h2>
+      <p class="meta">${c.nodes.length} collections read</p>
+      <div class="rule"></div>
+      <p class="essence">${c.essence}</p>
+      <div class="rule"></div>
+      <p class="sect-label"><span class="dot"></span>between you and ${c.name}</p>
+      ${threads}
+      <p class="walk">${c.walk}</p>
+      <p class="foot"><span>this reading is only yours · computed at meeting</span><span>the same person reads differently to everyone</span></p>
+    `;
+  }
+  panelBody.innerHTML=html;
+  panel.classList.add('open');
+  // gently center the selection
+  const tx=c.cx, ty=c.cy;
+  animateCam(tx, ty);
+}
+
+let camAnim=null;
+function animateCam(tx,ty){
+  const sxv=camX, syv=camY, t0=performance.now(), dur=600;
+  // offset target slightly left so panel doesn't cover it
+  const targetX = tx + (220/scale);
+  cancelAnimationFrame(camAnim);
+  function step(now){
+    const k=Math.min((now-t0)/dur,1), e=1-Math.pow(1-k,3);
+    camX=sxv+(targetX-sxv)*e; camY=syv+(ty-syv)*e;
+    if(k<1) camAnim=requestAnimationFrame(step);
+  }
+  camAnim=requestAnimationFrame(step);
+}
+
+function deselect(){ selected=null; panel.classList.remove('open'); }
+
+window.addEventListener('keydown',e=>{if(e.key==='Escape')deselect();});
+
+// =================== theme toggle ===================
+const themeBtn=document.getElementById('themeBtn');
+function setTheme(name){
+  theme=THEMES[name];
+  document.body.classList.toggle('light', name==='light');
+  themeBtn.innerHTML = name==='light' ? '&#9789; night' : '&#9728; day';
+  if(selected) selectConstellation(selected); // refresh chip tints in the open panel
+}
+themeBtn.onclick=()=> setTheme(document.body.classList.contains('light')?'dark':'light');
+</script>
+</body>
+</html>

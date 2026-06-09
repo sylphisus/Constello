@@ -1,0 +1,296 @@
+/* Observatory aesthetic. Tokens carried over from ui/index.html (the Sky view)
+   so the adapter feels like the same instrument. Gentle dark, never black;
+   warm cream ink; the red reserved as a single accent. */
+:root {
+  --bg: #0e111b;
+  --bg-soft: #12151f;
+  --ink: #efe7d6;
+  --ink-soft: #b8ad97;
+  --ink-faint: #7d7563;
+  --red: #e8584d;
+  --hair: rgba(239, 231, 214, 0.11);
+  --hair-strong: rgba(239, 231, 214, 0.16);
+  --essence: #e2dac9;
+  --field-bg: rgba(239, 231, 214, 0.02);
+  --serif: "Fraunces", Georgia, "Times New Roman", serif;
+  --sans: "Inter Tight", system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  background:
+    radial-gradient(1200px 700px at 50% -10%, #161a27 0%, var(--bg) 55%) fixed;
+  color: var(--ink);
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+}
+
+.wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 64px 28px 140px;
+}
+
+/* ── wordmark ──────────────────────────────────────────────────────────── */
+.mark h1 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 26px;
+  letter-spacing: 0.5px;
+  color: var(--ink);
+}
+.mark p {
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-top: 7px;
+}
+
+/* ── framing copy ──────────────────────────────────────────────────────── */
+.framing {
+  margin: 38px 0 30px;
+  font-size: 16px;
+  line-height: 1.62;
+  color: var(--ink-soft);
+}
+.framing strong {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.eyebrow {
+  font-size: 10.5px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* ── pieces (editable submissions) ─────────────────────────────────────── */
+.piece {
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  padding: 20px 20px 18px;
+  margin-bottom: 18px;
+  background: var(--bg-soft);
+}
+.label-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--hair);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 19px;
+  padding: 2px 0 9px;
+  margin-bottom: 14px;
+}
+.label-input::placeholder {
+  color: var(--ink-faint);
+  font-style: italic;
+}
+.label-input:focus {
+  outline: none;
+  border-bottom-color: var(--hair-strong);
+}
+textarea.body-input {
+  width: 100%;
+  min-height: 150px;
+  resize: vertical;
+  background: var(--field-bg);
+  border: 1px solid var(--hair);
+  border-radius: 9px;
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 14.5px;
+  line-height: 1.6;
+  padding: 13px 14px;
+}
+textarea.body-input::placeholder {
+  color: var(--ink-faint);
+}
+textarea.body-input:focus {
+  outline: none;
+  border-color: var(--hair-strong);
+}
+
+.piece-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 13px;
+}
+.file-label {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  cursor: pointer;
+  border-bottom: 1px solid transparent;
+}
+.file-label:hover {
+  color: var(--ink-soft);
+  border-bottom-color: var(--hair-strong);
+}
+.file-label input {
+  display: none;
+}
+.remove {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.remove:hover {
+  color: var(--red);
+}
+
+/* ── buttons ───────────────────────────────────────────────────────────── */
+.ghost-btn {
+  background: none;
+  border: 1px dashed var(--hair-strong);
+  color: var(--ink-soft);
+  font-family: var(--sans);
+  font-size: 11.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 12px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  width: 100%;
+}
+.ghost-btn:hover {
+  border-color: var(--ink-faint);
+  color: var(--ink);
+}
+
+.primary-btn {
+  background: var(--ink);
+  border: none;
+  color: var(--bg);
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 15px 24px;
+  border-radius: 11px;
+  cursor: pointer;
+}
+.primary-btn:hover {
+  background: #fff;
+}
+.primary-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.actions {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+/* ── readings (Node cards) ─────────────────────────────────────────────── */
+.reading-card {
+  border-top: 1px solid var(--hair);
+  padding: 30px 2px 6px;
+  margin-top: 8px;
+}
+.reading-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.reading-head .remove {
+  margin-left: auto;
+  padding-top: 8px;
+  flex-shrink: 0;
+}
+.reading-card .title {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1.14;
+  color: var(--ink);
+}
+.reading-card .reading {
+  font-size: 15.5px;
+  line-height: 1.66;
+  color: var(--essence);
+}
+.reading-card .reading p {
+  margin-bottom: 14px;
+}
+
+/* ── the essence synthesis ─────────────────────────────────────────────── */
+.essence-block {
+  margin-top: 60px;
+  border-top: 1px solid var(--hair-strong);
+  padding-top: 40px;
+}
+.essence-block .essence-eyebrow {
+  font-size: 10.5px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--red);
+  margin-bottom: 24px;
+}
+.essence-text {
+  font-family: var(--serif);
+  font-size: 18.5px;
+  line-height: 1.66;
+  color: var(--essence);
+  font-weight: 400;
+}
+.essence-text p {
+  margin-bottom: 20px;
+}
+
+.section-gap {
+  margin-top: 40px;
+}
+
+.note {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink-faint);
+  margin-top: 10px;
+}
+.error {
+  color: var(--red);
+  font-size: 13.5px;
+  margin-top: 12px;
+  line-height: 1.5;
+}
+.thinking {
+  color: var(--ink-faint);
+  font-style: italic;
+  font-size: 14px;
+}
+.persist-flag {
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-top: 22px;
+}

@@ -1,0 +1,13 @@
+OxRiver's prediction: as AI makes the real indistinguishable from the fake, there will be a renaissance of live experience, handcrafted art, and in-person venues — people craving tangible proof of human creativity. The diagnosis is backwards.
+
+People do not care about what's real and never have; the infinite reign of the Scheinwelt is perpetual proof of that. The problem with AI isn't that the creativity isn't human — it's that the creativity isn't creative. And that failure is older than AI.
+
+We live in a society optimized for the most likes, the most scrolling, the most screentime — and all three are no longer correlated with happiness. We've built massive institutional and cultural algorithms that min-max things long since decoupled from what would actually satisfy us.
+
+The mechanism is the like. Every system we have is built to measure likes and engagement, and the like is a flawed currency — it can never truly represent the worth of a post. It is purely binary: you either like it or you don't. So the system optimizes for universal themes with no axis to measure depth of meaning. It makes the system act as if we value things like sex the most — but the disparity is inflated, because the currency is flawed. Imagine if everything in the world could only be worth one dollar or zero dollars.
+
+So the emptiness people hate about AI isn't something new, but an increase in the optimality of a system that's already been failing us. We don't hate AI; we hate that it tends to lack any real meaning at all. But it still gets liked. Fundamentally the like has failed us — and this has nothing to do with AI. It's a misalignment of values due to the binary nature of our cultural economy, the same thing that caused our equally disgusting attention economy. AI slop and engagement slop are the same problem, fathered by the same evil like button.
+
+The renaissance OxRiver predicts is no escape. Most people never found live art that meaningful anyway; it gains one miniscule layer of meaning as "AI counterculture," but that is superficial and worthless. What brought people together was each other, not the medium — live theatre will keep dying regardless. Don't mistake the medium for the meaning something has. And the investment framing — art as a tradeable asset class — misunderstands it completely: no trade, no liquidity, nothing to short.
+
+The direction out is not a return to authentic mediums but a richer currency than the binary like: value based on embedded meaning, something scarce that costs something real to obtain but is not money, given to art. Decoupling from money — not just a new asset class but an entirely new economy.
