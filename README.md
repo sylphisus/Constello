@@ -14,7 +14,7 @@ Prototype + spec for Constello — a system that reads what a person carries *un
 | `CONSTELLO_BUILD.md` | Full build spec |
 | `CONSTELLO_PHILOSOPHY.md` | Design philosophy driving the build |
 | `CREDENTIALS.md` | Credentials & inputs checklist (companion to BUILD_PLAN) |
-| `philosophy/` | Origin notes & design-philosophy essays (from the Obsidian vault) |
+| `obsidian vault/` | Origin notes & design-philosophy essays (from the Obsidian vault) |
 | `.claude/` | Local launch config |
 
 ## Run the web app

@@ -9,7 +9,7 @@ Constello reads what a person carries *underneath* the things they gather — no
 ## Where things live
 
 - Build spec & plan: `BUILD_PLAN.md`, `CONSTELLO_BUILD.md`
-- Philosophy: `CONSTELLO_PHILOSOPHY.md`, plus essays in `philosophy/`
+- Philosophy: `CONSTELLO_PHILOSOPHY.md`, plus essays in `obsidian vault/`
 - Credentials checklist: `CREDENTIALS.md`
 - Web prototype: `apps/web/` (Next.js — text adapter §6.5, essence synthesis §7)
 - Visual prototypes: `ui/`
