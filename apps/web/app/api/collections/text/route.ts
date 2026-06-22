@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     const { system, user } = nodeReadingMessages(submission);
     const message = await anthropic().messages.create({
       model: MODELS.nodeReading,
-      max_tokens: 1200,
+      max_tokens: 16000,
       system,
       messages: [{ role: "user", content: user }],
     });
@@ -57,6 +57,7 @@ export async function POST(req: Request) {
 
   // ── Persist (best-effort) ──────────────────────────────────────────────────
   const db = supabase();
+  let persisted = false;
   if (db) {
     const { error: subErr } = await db.from("text_submissions").insert({
       id: submission.id,
@@ -71,8 +72,10 @@ export async function POST(req: Request) {
     });
     if (subErr || nodeErr) {
       console.warn("[text] persistence failed:", subErr ?? nodeErr);
+    } else {
+      persisted = true;
     }
   }
 
-  return NextResponse.json({ node, submission, persisted: db !== null });
+  return NextResponse.json({ node, submission, persisted });
 }
