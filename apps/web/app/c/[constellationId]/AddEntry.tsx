@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-// Landing / first entry. Stores the entry (no model call) and routes the person
-// to their constellation, where readings appear as they're fulfilled by hand.
-// No title field — if a piece needs a title, it lives inside the piece.
-export default function Home() {
+// Add another collection to an existing constellation. Stored pending; the
+// reading is fulfilled by hand later. No title field — a title, if any, lives
+// inside the piece.
+export default function AddEntry({ constellationId }: { constellationId: string }) {
   const router = useRouter();
+  const [open, setOpen] = useState(false);
   const [rawText, setRawText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -17,7 +18,7 @@ export default function Home() {
     setRawText(await file.text());
   }
 
-  async function begin() {
+  async function add() {
     if (!rawText.trim() || busy) return;
     setBusy(true);
     setError("");
@@ -25,30 +26,32 @@ export default function Home() {
       const res = await fetch("/api/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rawText }),
+        body: JSON.stringify({ constellationId, rawText }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Something went wrong.");
-      router.push(`/c/${data.constellationId}`);
+      if (!res.ok) throw new Error(data.error ?? "Could not add.");
+      setRawText("");
+      setOpen(false);
+      router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setError(e instanceof Error ? e.message : "Could not add.");
+    } finally {
       setBusy(false);
     }
   }
 
-  return (
-    <main className="wrap">
-      <div className="mark">
-        <h1>Constello</h1>
-        <p>Begin your constellation</p>
+  if (!open) {
+    return (
+      <div className="section-gap">
+        <button className="ghost-btn" onClick={() => setOpen(true)}>
+          + Add another piece
+        </button>
       </div>
+    );
+  }
 
-      <p className="framing">
-        Bring something you've kept or gathered — a list, writing of your own,
-        things you hold onto. It gets read for the world underneath it. You can
-        add more pieces after.
-      </p>
-
+  return (
+    <div className="section-gap">
       <textarea
         className="body-input"
         placeholder="Paste it here…"
@@ -65,16 +68,19 @@ export default function Home() {
           />
         </label>
       </div>
-      <div className="actions" style={{ marginTop: 16 }}>
+      <div className="actions" style={{ marginTop: 12 }}>
         <button
           className="primary-btn"
           disabled={!rawText.trim() || busy}
-          onClick={begin}
+          onClick={add}
         >
-          {busy ? "Beginning…" : "Begin"}
+          {busy ? "Adding…" : "Add piece"}
+        </button>
+        <button className="ghost-btn" onClick={() => setOpen(false)}>
+          Cancel
         </button>
       </div>
       {error && <p className="error">{error}</p>}
-    </main>
+    </div>
   );
 }

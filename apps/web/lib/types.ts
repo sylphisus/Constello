@@ -25,3 +25,38 @@ export interface Synthesis {
   /** Hash of all node readings + raw material; the synthesis is cached on this. */
   fingerprint: string;
 }
+
+// ── Manual alpha (branch: alpha-manual-readings) ─────────────────────────────
+// A person IS a constellation. Readings/essences are model-authored HTML
+// artifacts, fulfilled by hand. `signature` is the embedding-derived live shape,
+// null until the first reading exists.
+
+export interface Constellation {
+  id: string;
+  signature: string | null;
+  createdAt: string;
+}
+
+export interface Entry {
+  id: string;
+  constellationId: string;
+  label: string;
+  rawText: string;
+  createdAt: string;
+}
+
+/** One reading per entry. The artifact is a self-contained HTML world. */
+export interface Reading {
+  id: string;
+  entryId: string;
+  artifact: string;
+  createdAt: string;
+}
+
+/** The cross-entry essence; one current artifact per constellation. */
+export interface Essence {
+  id: string;
+  constellationId: string;
+  artifact: string;
+  createdAt: string;
+}
