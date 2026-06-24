@@ -1,11 +1,5 @@
 # Constello — Architectural Deepening
 
-## The attention-economy framing
-
-Every like is equal. There is no perceivable metric for intensity of preference. A piece of content that mildly entertains ten thousand people outranks one that devastates a thousand. Depth becomes a liability. The infrastructure can't hold the distinction between *I liked it* and *this rearranged how I see things*, and culture eventually internalizes the metrics it's sorted by.
-
-The structural deficit and what compensates for it now: personalized feeds, Twitter communities, super fan systems, the underground. Each solves part of the problem and leaves the rest broken.
-
 ## Hard things and the dopamine mechanism
 
 Hard-as-cost vs hard-as-mechanism. Most self-help discourse treats difficulty as instrumentally necessary to a separable reward. Constello's thesis: resistance is constitutive of the reward — remove the difficulty and you haven't made it better, you've destroyed it.
