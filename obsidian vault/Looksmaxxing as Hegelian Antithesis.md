@@ -1,4 +1,3 @@
-# Looksmaxxing as Hegelian Antithesis
 
 Looksmaxxing is the antithesis in a Hegelian dialectic whose thesis was 2010s self-acceptance / body-positivity culture. The same dialectical frame applied to the attention economy in *Validation as the Demon King* and to cultural register in *Front-running the Whitepill*. Aesthetic culture and the body are a third surface the same dialectic is operating on.
 

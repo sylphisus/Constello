@@ -8,31 +8,46 @@ Constello is a social app built around authentic connection. No names, no race, 
 
 <!-- Update this section each session with what's currently in motion -->
 
+- **Brand before app.** Build the culture, identity, and hype before launch — it raises odds of success for a social app and re-educates people into a grammar antithetical to the status quo so they don't default to operating it like everything else. Atom: [[Constello must be a brand before it is an app]].
+- **The approach device.** A 3D-printed stranger-approach tool; engineered accidental encounter as a zero-risk entry, with a conversation window, a frictionless exit, and a frictionless segue into Constello via a reciprocal ask. Atom: [[The approach device — engineered accident as zero-risk entry]].
+- **Open: is the no-extraction/no-agenda intent its own node?** The claim that intent + taste (not the mechanic) is what separates this from slop. Currently lives inside the device atom; Ethan to decide whether to break it out and how to title it.
+- **Still unresolved: "approach anyone" scope.** Any public footprint (surveillance variant) vs. only people who've built a constellation (honest growth primitive).
+
 ## Session context
 
 <!-- Hermes updates this. Last meaningful session summary goes here. -->
 
-## Vault instructions
+## How this vault works
 
-**Operating.** Read CORE.md and INDEX.md at session start. Pull full atoms only when the task requires their content.
+**Operating.** Read CORE.md and INDEX.md at session start. Open a full doc only when the task needs what's in it.
 
-**Purpose.** Generate Obsidian atoms that function as reference files for Claude. The vault is Claude's working memory across sessions; Ethan and any other human readers are secondary.
+**Purpose.** These docs are Claude's working memory across sessions; Ethan and any human readers are secondary. The job is for future-Claude to recover a line of thinking at the resolution it was actually thought at — unfinished edges included — without re-deriving it.
 
-**What an atom is.** One idea per file. "One idea" means one coherent thought — which may require several sentences, a developed argument, or multiple related claims that only make sense together. Atomic doesn't mean microscopic. Split when two ideas are genuinely separable and each stands alone. Don't split a single argument into its component claims — that destroys the thing. If the parts only make sense in relation to each other, they're one atom. One node per thesis: a thesis stays intact. Connection nodes and overarching-idea nodes are secondary — written after the thesis nodes exist, never in place of them.
+**The unit is a territory, not an atom.** One doc holds a whole line of thinking and the connections inside it. Don't fragment an argument into one-idea files; don't write a doc per claim. A territory is as large as the thinking that hangs together — *Origin*, *the reading*, *the cultural diagnosis*. Two things that belong to different lines of thought are different docs; two things that only make sense in relation to each other are one doc, and the relation gets written into it.
 
-**Writing rules.**
-- Preserve Ethan's words exactly when porting his thinking. Don't rephrase, expand, or smooth.
-- When generating new atoms, write tight and brief. No padding, no throat-clearing, no recap.
-- Prose over bullets unless the content is genuinely enumerable.
-- No meta-commentary ("this note explores…"). State the thing.
+**Connections are prose, not nodes.** The connecting *is* the thinking — it lives inside the docs as written argument, where it's real. No connection-stub format, no two-quote nodes, no "see also," no manufactured graph. If a connection is worth making, make it in the sentence where it matters. If it needs a template to exist, it isn't one.
 
-**Revising existing notes.** The priority is preserving meaning. Strip flair, posture, and rhetorical scaffolding written for third-party readers — transitions, framing sentences, summaries that exist to orient an outside reader. Keep every idea, every distinction, every claim. If a sentence is doing real conceptual work, it stays, even if it isn't tight. If it's doing social or rhetorical work, cut it. When in doubt, preserve.
+**No tokens.** The failure this vault exists to refuse is compressing the uncompressible into a portable handle that then gets defended in place of the idea.
+- Titles are an address or a full claim — never a brand or tagline. A title that begs to be chanted is already a token; rewrite it.
+- A name or coinage is allowed only as an in-place pointer to something already described at full resolution. Never standalone, never a title. The moment you're defending the name instead of the thing, kill it. (Retired this way: "presence without performance.")
+- Don't reach for a tidy phrase to make something feel resolved or familiar when it isn't. The whole point of most of this is that it does *not* fit established ideas.
 
-**Structure.**
-- Title: a claim or named concept, not a category.
-- Body: the idea itself. Short when the idea is short; longer when the idea requires it.
-- No forced connections, no "see also" sections, no tags unless Ethan specifies them.
+**Writing.**
+- Preserve Ethan's words exactly when porting his thinking. Don't rephrase, smooth, or tighten his language.
+- Keep the mess: rejected framings, the "we tried X, wrong because," the specific examples that anchor an idea. The clean claim is the slogan in paragraph form — don't strip down to it.
+- Fidelity over brevity. Short when the idea is short, long when it isn't. Cut scaffolding written to orient an outside reader (transitions, framing, summaries); keep every distinction doing conceptual work.
+- Prose over bullets unless the content is genuinely enumerable. No meta-commentary ("this doc explores…"). State the thing.
 
-**Linking.** Don't propose links. Ethan declares connections separately via the annotation format (directional title, two quotes, 1–2 sentence binding). Claude reads markdown, not the graph — proposing links blind would produce shallow same-topic connections, which the framework explicitly rejects.
+**Navigation is the index's job.** Don't make a doc self-summarizing so it can be found. INDEX carries the one-line gist of what's inside; the doc carries the thing.
 
-**Optimize for.** Future-Claude reading this cold and recovering the idea fast. Brevity serves that; reductiveness doesn't.
+**This replaced an atomic system** (one-idea-per-file + claim-titles + § connection stubs), killed because the format was a token factory that manufactured slogans faster than they could be killed. Don't reintroduce it. If this system starts generating its own slop, abandon the offending rule — don't refine it.
+
+## Working discipline
+
+Standing corrections, earned in session. Load as hard defaults.
+
+- Don't convert Ethan's subtlety into checklists or specs. Taste is not itemizable; demanding it be rendered flattens the register Constello lives in. Read for it instead of asking him to spell it out.
+- Don't reach for conventional principles as safe defaults — "honesty is good," "instrumenting a human signal is slop." These are stored answers grabbed because they're legible, not because they fit. Look at what actually happens to two real people in the real moment.
+- The inherited categories are too coarse to hold what Constello is about. Defaulting to them is the exact grammar Constello exists to break — every time Claude reaches for one, it demonstrates why the project is needed and not yet built.
+- Intent is the differentiator. No selling, no agenda, no extraction — that, plus taste, is what separates a mechanic from slop. The mechanic alone never settles the question.
+- When a framing is wrong, abandon it — don't refine it, and don't swap one tidy label for another. Retired example: **"presence without performance"** was killed as gross packaging reached for because it was easy to swing. Do not reintroduce it or a substitute slogan. The thing it crudely pointed at (being held without having to produce anything) is real and stays — expressed concretely in the architecture, never as a named pillar — until Ethan names it himself.

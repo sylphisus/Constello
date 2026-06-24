@@ -1,6 +1,6 @@
 > "people you recognize as *your people*, not because of shared interests or context, but because something in their essence is akin to yours. 'They could lead any life, even if they were a fucking sherpa in the appalachians, it doesn't matter who we are down here — we would always still recognize each other.'"
 >
-> — [[Constello — Origin Conversation]]
+> — [[Constello — Origin]]
 
 > "Two people who collected wildly different things for the same underlying reason would never match in a tag system. They'd appear to be in different communities entirely. This is precisely the recognition the sherpa line names — and precisely the recognition tag-based architectures structurally cannot deliver."
 >

@@ -1,11 +1,5 @@
 # Constello — Architectural Deepening
 
-## To revisit
-
-- **764 and the exploiting problem** — Constello as the structural answer to lack of belonging / identity / validation for who you are when you have no group to identify with. The same root problem 764 exploits, addressed at the supply side rather than the demand side.
-- **Fantasy → real bridge** — Ariadne's thread, the red string of fate, constellations themselves. Use these as fantasy concepts in the story. The recognition hits when readers encounter the app and realize these are real and tangible, not metaphors. This effect is true of many stories, but being able to articulate it without breaking the subtlety is the move.
-- **Romantic story concept** — still dormant. Worth developing as part of or alongside the main Constello story.
-
 ## The attention-economy framing
 
 Every like is equal. There is no perceivable metric for intensity of preference. A piece of content that mildly entertains ten thousand people outranks one that devastates a thousand. Depth becomes a liability. The infrastructure can't hold the distinction between *I liked it* and *this rearranged how I see things*, and culture eventually internalizes the metrics it's sorted by.
@@ -70,7 +64,7 @@ In an attention economy, posting and getting nothing back is a death sentence. H
 
 App first, then story, then manhwa, then anime — one season is enough to be clipped into oblivion.
 
-The story must not be *about* Constello. It has to make people feel — viscerally — the loneliness of holding uncompressible meaning in a world with no infrastructure for it. The protagonist is someone whose inner life has nowhere to go. The antagonist is the attention economy as a metaphysical condition. The arc is the discovery of recognition without performance.
+The story must not be *about* Constello. It has to make people feel — viscerally — the loneliness of holding uncompressible meaning in a world with no infrastructure for it. The protagonist is someone whose inner life has nowhere to go. The antagonist is the attention economy as a metaphysical condition. The arc is the discovery of being recognized as kin with nothing to post, prove, or perform — held simply for what you already are.
 
 By the time the audience finishes, they should think: *I have felt this my entire life and I never had words for it.* Constello existing means they have somewhere to put that feeling instead of letting it dissipate.
 
@@ -116,11 +110,10 @@ Defenses:
 
 ## Open threads
 
-- Presence-testing mechanic, never resolved
-- Resonance profiling / onboarding flow design
-- Story development — protagonist, arc, the structural-loneliness-of-uncompressible-meaning emotional core
-- Romantic story concept — still dormant
-- Token utility specifics — what holding actually does inside the product
-- Naming — *Constello* is a placeholder, the real name comes later (UPDATE: Collections?)
-- 764 / belonging / exploiting connection
-- Ariadne's thread / red string / constellations — fantasy concept seeding for the story
+- **Onboarding / resonance profiling** — flow design for the matching layer.
+- **Story development** — protagonist, arc, the structural-loneliness-of-uncompressible-meaning emotional core.
+- **764 and the exploiting problem** — Constello as the structural answer to the lack of belonging / identity / validation for who you are when you have no group to identify with. The same root problem 764 exploits, addressed at the supply side rather than the demand side.
+- **Fantasy → real bridge** — Ariadne's thread, the red string of fate, constellations themselves, used as fantasy concepts in the story. The recognition hits when readers encounter the app and realize these are real and tangible, not metaphors. Many stories do this; articulating it without breaking the subtlety is the move.
+- **Romantic story concept** — still dormant. The version of someone that only emerges around true safety — not a different person, a fuller one. Worth developing alongside the main story.
+- **Token utility specifics** — what holding actually does inside the product.
+- **Naming** — *Constello* is a placeholder (UPDATE: Collections?).

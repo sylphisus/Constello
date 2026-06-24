@@ -1,0 +1,9 @@
+{
+  "id": "constello-semantic-search",
+  "name": "Constello Semantic Search",
+  "version": "0.1.0",
+  "minAppVersion": "1.4.0",
+  "description": "Cosine-similarity semantic search over the vault using Voyage embeddings. You control what gets embedded.",
+  "author": "Ethan",
+  "isDesktopOnly": false
+}
