@@ -12,7 +12,7 @@ export async function GET() {
 
   const { data: entries } = await db
     .from("entries")
-    .select("id, constellation_id, label, raw_text, created_at")
+    .select("id, constellation_id, source, label, raw_text, created_at")
     .order("created_at", { ascending: true });
   const { data: readings } = await db.from("readings").select("entry_id");
   const { data: essences } = await db.from("essences").select("constellation_id");

@@ -9,6 +9,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 interface PendingEntry {
   id: string;
   constellation_id: string;
+  source: string;
   label: string;
   raw_text: string;
   created_at: string;
@@ -99,7 +100,8 @@ function PendingCard({ entry, onSaved }: { entry: PendingEntry; onSaved: () => v
   return (
     <section style={card}>
       <div style={meta}>
-        constellation {entry.constellation_id.slice(0, 8)} · {entry.label || "(no label)"}
+        constellation {entry.constellation_id.slice(0, 8)} · {entry.source} ·{" "}
+        {entry.label || "(no label)"}
       </div>
       <p style={hint}>Copy into claude.ai:</p>
       <textarea

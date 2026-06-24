@@ -60,9 +60,13 @@ These unblock milestones 2.1–2.4.
 
 ### Last.fm
 
-- [ ] **Last.fm API key** (free, instant) from last.fm/api/account/create.
-- [ ] **Ethan's Last.fm username** for the first real run.
-- [ ] **Optional**: Last.fm OAuth app, if you want richer data than the username API gives. Not required for prototype.
+- [x] **Last.fm API key** — created 2026-06-23, set as `LASTFM_API_KEY` in Vercel (all 3 envs; encrypted). Adapter (`apps/web/lib/collections/lastfm.ts`) verified end-to-end against live data. No OAuth — public scrobbles via the username API.
+- [x] **Ethan's Last.fm username** — `yuneekae` (confirmed working).
+
+### X / Twitter
+
+- [ ] **Decide the fetch source.** The adapter's formatter and route are built (`apps/web/lib/collections/twitter.ts`, `/api/collections/twitter`), but `fetchTwitter` is a stub — it's the single swap point. Wire it to whatever source you land on (official X API v2, or a third-party) so it returns the normalized `TwitterData` (profile + recent posts). Gate it on that provider's credential env var.
+- [ ] **Ethan's handle** for the first real run.
 
 ### Claude memory
 

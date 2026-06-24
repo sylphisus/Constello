@@ -29,9 +29,13 @@ create index if not exists signature_history_constellation_idx
 
 -- One collection the person submitted. The act of including it is the signal.
 -- "pending" = an entry with no reading row yet (Ethan fulfills by hand).
+-- `source` is the collection type: 'text' (pasted/uploaded writing), 'lastfm',
+-- or 'twitter'. The non-text sources are fetched from an API and formatted into
+-- raw_text by an adapter (lib/collections/*); the reading is still by hand.
 create table if not exists entries (
   id                uuid primary key default gen_random_uuid(),
   constellation_id  uuid not null references constellations(id) on delete cascade,
+  source            text not null default 'text',
   label             text not null default '',
   raw_text          text not null,
   created_at        timestamptz not null default now()
