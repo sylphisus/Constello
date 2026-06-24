@@ -34,7 +34,7 @@ Constello reads the *direction* of what someone is reaching toward across hetero
 
 ### The two ends of the same argument
 
-The sherpa line is the *phenomenological* statement: what it feels like to know someone is your kin even when their surface life is unrecognizable to yours. The wildly-different-things line is the *technical* statement: what this requires of the matching system. One is the experience Constello promises to honor. The other is the infrastructure constraint that determines whether Constello can deliver it. The story will need to *show* the sherpa-shaped recognition on screen — that's the moment that makes the audience know what Constello is actually for.
+The sherpa line is the *phenomenological* statement: what it feels like to know someone is your kin even when their surface life is unrecognizable to yours. The wildly-different-things line is the *technical* statement: what this requires of the matching system. One is the experience Constello promises to honor — the founding spark recorded in [[Constello — Origin]]. The other is the infrastructure constraint that determines whether Constello can deliver it. The story will need to *show* the sherpa-shaped recognition on screen — that's the moment that makes the audience know what Constello is actually for.
 
 ## Architectural commitments
 

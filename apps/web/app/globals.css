@@ -42,6 +42,29 @@ body {
   padding: 64px 28px 140px;
 }
 
+/* ── site nav (repo / docs) ────────────────────────────────────────────── */
+.site-nav {
+  position: fixed;
+  top: 22px;
+  right: 26px;
+  display: flex;
+  gap: 20px;
+  z-index: 10;
+}
+.site-nav a {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  padding-bottom: 2px;
+}
+.site-nav a:hover {
+  color: var(--ink-soft);
+  border-bottom-color: var(--hair-strong);
+}
+
 /* ── wordmark ──────────────────────────────────────────────────────────── */
 .mark h1 {
   font-family: var(--serif);

@@ -38,7 +38,7 @@ The common structure: the thesis flattens through *false equality* (everyone equ
 >
 > media, story, narrative that will make people understand the higher order of things and attack the ultimately cultural problem. Altho theyve already done most of the work themselves, giving them this will give them clarity about it, tangibility. Theyre set up to receive it by the agony the existing social-state has caused.
 
-This is the *you're less* engine running on the attention surface — the same engine looksmaxxing runs on the body, the same engine the flawed currency produces (see *Why the attention economy fails*). The two-step — app, then narrative — is the same two-front answer the whole project takes: build the synthesis into infrastructure, and make people understand it through story, because the agony of the current social-state has already set them up to receive it.
+This is the *you're less* engine running on the attention surface — the same engine looksmaxxing runs on the body, the same engine the flawed currency produces (see [[Why the attention economy fails]]). The two-step — app, then narrative — is the same two-front answer the whole project takes: build the synthesis into infrastructure, and make people understand it through story, because the agony of the current social-state has already set them up to receive it.
 
 ## Synthesis expression one: Constello, for connection
 

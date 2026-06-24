@@ -25,7 +25,19 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <nav className="site-nav">
+          <a
+            href="https://github.com/sylphisus/Constello"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Repo
+          </a>
+          <a href="/docs">Docs</a>
+        </nav>
+        {children}
+      </body>
     </html>
   );
 }

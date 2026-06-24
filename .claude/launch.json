@@ -13,6 +13,13 @@
       "runtimeArgs": ["run", "dev"],
       "cwd": "apps/web",
       "port": 3000
+    },
+    {
+      "name": "docs",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["quartz", "build", "--serve"],
+      "cwd": "apps/docs",
+      "port": 8080
     }
   ]
 }

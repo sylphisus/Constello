@@ -4,6 +4,8 @@ Merged record of the two founding conversations (the original spark and the Apri
 
 > *"Their existence in essence is akin to mine, a kin to mine. They could lead any life, even if they were a fucking sherpa in the appalachians, it doesn't matter who we are down here — we would always still recognize each other."*
 
+This sherpa line is the phenomenological end of the project; what recognizing kin *underneath* the surface demands of the matching system is worked out in [[Constello — Architectural Deepening]].
+
 ## The spark
 
 Two creative sparks lost earlier in the day — one for a social app, one for a romantic story. The app idea overtook everything. The core image: people you recognize as *your people*, not because of shared interests or context, but because something in their essence is akin to yours.
