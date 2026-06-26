@@ -34,7 +34,7 @@ export async function POST(req: Request) {
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
 
   // The handle doubles as a notification contact, but stays UNVERIFIED until it's
-  // confirmed to follow @constello (the follow gate in lib/notify). Notifications
+  // confirmed to follow @03constello (the follow gate in lib/notify). Notifications
   // are a public @mention — the knock only, never the bearer link. Best-effort.
   const db = supabase();
   if (db) {

@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc --noEmit)",
+      "WebFetch",
+      "WebSearch",
+      "mcp__Claude_Preview__preview_screenshot",
+      "mcp__Claude_Preview__preview_console_logs",
+      "mcp__Claude_Preview__preview_list",
+      "mcp__mcpvault__list_directory",
+      "mcp__mcpvault__search_notes",
+      "mcp__mcpvault__read_note"
+    ]
+  }
+}

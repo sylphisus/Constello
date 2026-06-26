@@ -202,6 +202,22 @@ textarea.body-input:focus {
   border-color: var(--ink-faint);
   color: var(--ink);
 }
+/* the ghost button used as a link (the iMessage deep link) */
+a.ghost-btn {
+  display: block;
+  box-sizing: border-box;
+  text-align: center;
+  text-decoration: none;
+}
+
+.text-link {
+  color: var(--ink-soft);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.text-link:hover {
+  color: var(--ink);
+}
 
 .primary-btn {
   background: var(--ink);

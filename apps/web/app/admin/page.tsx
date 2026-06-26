@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { X_HANDLE } from "@/lib/brand";
 
 // Fulfillment console (gated by Basic auth in middleware). Three views:
 //  - a stats bar + roster of every constellation (the whole population),
@@ -45,6 +46,25 @@ interface Stats {
 
 const PROMPT = "Conduct a personal analysis of this.";
 
+// Where the off-platform X bridge lives (the scrape stays local; prod never
+// holds a cookie). Used to print a ready-to-paste fulfillment command.
+const BRIDGE_DIR = "~/Documents/twitter-preservation";
+// A queued-but-unfilled X entry carries this placeholder body (see
+// /api/collections/twitter); the posts arrive later via the bridge.
+const X_PLACEHOLDER_PREFIX = "Pending X / Twitter capture";
+
+// "X · @handle" → "handle" (the deterministic label formatTwitter writes).
+function xHandle(label: string): string | null {
+  const m = label.match(/@(\S+)/);
+  return m ? m[1] : null;
+}
+
+// The exact local command that scrapes the handle and fills THIS entry
+// (--constellation-id makes the bridge reconcile into it, not fork a new world).
+function bridgeCommand(handle: string, constellationId: string): string {
+  return `cd ${BRIDGE_DIR}\nCONSTELLO_ADMIN_PASSWORD=… uv run constello-x ${handle} --constellation-id ${constellationId}`;
+}
+
 // "3d" / "5h" / "just now" — how long ago an ISO timestamp was.
 function ago(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -63,6 +83,9 @@ export default function Admin() {
   const [essenceQueue, setEssenceQueue] = useState<EssenceItem[]>([]);
   const [pendingFollows, setPendingFollows] = useState<PendingFollow[]>([]);
   const [loading, setLoading] = useState(true);
+  // True only until the first load settles. Refreshes after that keep the page
+  // mounted (so e.g. the queue-confirmation block isn't unmounted mid-refresh).
+  const [firstLoad, setFirstLoad] = useState(true);
   const [err, setErr] = useState("");
 
   async function load() {
@@ -81,6 +104,7 @@ export default function Admin() {
       setErr(e instanceof Error ? e.message : "Failed to load.");
     } finally {
       setLoading(false);
+      setFirstLoad(false);
     }
   }
   useEffect(() => {
@@ -115,7 +139,7 @@ export default function Admin() {
 
       {stats && <StatBar stats={stats} />}
 
-      {loading ? (
+      {loading && firstLoad ? (
         <p style={{ color: "var(--ink-soft)" }}>Loading…</p>
       ) : (
         <>
@@ -124,6 +148,10 @@ export default function Admin() {
             {roster.map((c) => (
               <RosterRow key={c.id} item={c} />
             ))}
+          </Section>
+
+          <Section title="Queue an X handle">
+            <XQueue onQueued={load} />
           </Section>
 
           <Section title="Pending readings" count={pending.length}>
@@ -233,29 +261,146 @@ function PendingCard({ entry, onSaved }: { entry: PendingEntry; onSaved: () => v
     }
   }
 
+  // An X entry that's still just a queued handle has no posts to read yet — it's
+  // filled off-platform by the bridge. Show the command to run; hide the reading
+  // workflow until the posts arrive.
+  const handle = entry.source === "twitter" ? xHandle(entry.label) : null;
+  const awaitingCapture =
+    entry.source === "twitter" && entry.raw_text.startsWith(X_PLACEHOLDER_PREFIX);
+
   return (
     <section style={card}>
       <div style={meta}>
         {entry.source} · {entry.label || "(no label)"} · {ago(entry.created_at)} ago
       </div>
-      <p style={hint}>Copy into claude.ai:</p>
-      <textarea
-        readOnly
-        value={copyText}
-        style={{ ...ta, height: 120 }}
-        onFocus={(e) => e.currentTarget.select()}
-      />
-      <p style={hint}>Paste the artifact markdown back:</p>
-      <textarea
-        value={artifact}
-        onChange={(e) => setArtifact(e.target.value)}
-        style={{ ...ta, height: 160 }}
-        placeholder="# …"
-      />
-      <button onClick={save} disabled={!artifact.trim() || busy} style={btn}>
-        {busy ? "Saving…" : "Save reading"}
-      </button>
+
+      {handle && (
+        <div style={{ marginTop: 10 }}>
+          <p style={hint}>
+            {awaitingCapture
+              ? "Fill from X — run locally, then Refresh:"
+              : "Re-pull from X (run locally, then Refresh):"}
+          </p>
+          <BridgeBlock command={bridgeCommand(handle, entry.constellation_id)} />
+        </div>
+      )}
+
+      {awaitingCapture ? (
+        <p style={hint}>No posts captured yet. Run the command above, then Refresh.</p>
+      ) : (
+        <>
+          <p style={hint}>Copy into claude.ai:</p>
+          <textarea
+            readOnly
+            value={copyText}
+            style={{ ...ta, height: 120 }}
+            onFocus={(e) => e.currentTarget.select()}
+          />
+          <p style={hint}>Paste the artifact markdown back:</p>
+          <textarea
+            value={artifact}
+            onChange={(e) => setArtifact(e.target.value)}
+            style={{ ...ta, height: 160 }}
+            placeholder="# …"
+          />
+          <button onClick={save} disabled={!artifact.trim() || busy} style={btn}>
+            {busy ? "Saving…" : "Save reading"}
+          </button>
+          {err && <p style={{ color: "var(--red)" }}>{err}</p>}
+        </>
+      )}
+    </section>
+  );
+}
+
+// A ready-to-paste local command + a copy button. The scrape stays off-platform,
+// so fulfillment is "copy → run in your terminal → Refresh", never a prod scrape.
+function BridgeBlock({ command }: { command: string }) {
+  return (
+    <div>
+      <pre style={cmd}>{command}</pre>
+      <CopyButton text={command} label="Copy command" />
+    </div>
+  );
+}
+
+function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) {
+  const [done, setDone] = useState(false);
+  return (
+    <button
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(text);
+          setDone(true);
+          setTimeout(() => setDone(false), 1200);
+        } catch {
+          /* clipboard unavailable (e.g. non-https) — the text is still selectable */
+        }
+      }}
+      style={ghostBtn}
+    >
+      {done ? "Copied ✓" : label}
+    </button>
+  );
+}
+
+// Seed a new X reading from admin: queues the pending placeholder (same route the
+// public X tab uses) and immediately shows the bridge command to fill it.
+function XQueue({ onQueued }: { onQueued: () => void }) {
+  const [handle, setHandle] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [queued, setQueued] = useState<{ handle: string; constellationId: string } | null>(null);
+
+  async function queue() {
+    const h = handle.trim().replace(/^@/, "");
+    if (!h || busy) return;
+    setBusy(true);
+    setErr("");
+    setQueued(null);
+    try {
+      const res = await fetch("/api/collections/twitter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ handle: h }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to queue.");
+      setQueued({ handle: h, constellationId: data.constellationId });
+      setHandle("");
+      onQueued();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Failed to queue.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section style={card}>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <span style={{ color: "var(--ink-faint)" }}>@</span>
+        <input
+          value={handle}
+          onChange={(e) => setHandle(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && queue()}
+          placeholder="x handle"
+          style={input}
+        />
+        <button onClick={queue} disabled={!handle.trim() || busy} style={btn}>
+          {busy ? "Queuing…" : "Queue handle"}
+        </button>
+      </div>
       {err && <p style={{ color: "var(--red)" }}>{err}</p>}
+      {queued && (
+        <div style={{ marginTop: 14 }}>
+          <p style={hint}>
+            Queued <strong>@{queued.handle}</strong> → <Cid id={queued.constellationId} />. Run
+            locally to fill it, then Refresh:
+          </p>
+          <BridgeBlock command={bridgeCommand(queued.handle, queued.constellationId)} />
+        </div>
+      )}
     </section>
   );
 }
@@ -333,7 +478,7 @@ function FollowCard({ item, onSaved }: { item: PendingFollow; onSaved: () => voi
         <Cid id={item.constellationId} /> · {item.handle} · {ago(item.createdAt)} ago
       </div>
       <p style={hint}>
-        Confirm {item.handle} follows @constello, then verify — only then does a
+        Confirm {item.handle} follows @{X_HANDLE}, then verify — only then does a
         public mention go out.
       </p>
       <a
@@ -345,7 +490,7 @@ function FollowCard({ item, onSaved }: { item: PendingFollow; onSaved: () => voi
         Open {item.handle} ↗
       </a>
       <button onClick={verify} disabled={busy} style={btn}>
-        {busy ? "…" : "Verify — follows @constello"}
+        {busy ? "…" : `Verify — follows @${X_HANDLE}`}
       </button>
       {err && <p style={{ color: "var(--red)" }}>{err}</p>}
     </section>
@@ -360,13 +505,13 @@ function Section({
   children,
 }: {
   title: string;
-  count: number;
+  count?: number;
   children: React.ReactNode;
 }) {
   return (
     <section style={{ marginTop: 36 }}>
       <h2 style={h2}>
-        {title} <span style={dim}>({count})</span>
+        {title} {count != null && <span style={dim}>({count})</span>}
       </h2>
       {children}
     </section>
@@ -490,6 +635,29 @@ const cid: CSSProperties = {
   border: "1px solid var(--hair)",
   borderRadius: 4,
   padding: "1px 6px",
+};
+const input: CSSProperties = {
+  flex: 1,
+  fontFamily: "var(--sans)",
+  fontSize: 14,
+  padding: "8px 10px",
+  background: "var(--field-bg)",
+  color: "var(--ink)",
+  border: "1px solid var(--hair-strong)",
+  borderRadius: 7,
+  boxSizing: "border-box",
+};
+const cmd: CSSProperties = {
+  fontFamily: "ui-monospace, monospace",
+  fontSize: 12,
+  color: "var(--ink)",
+  background: "var(--bg)",
+  border: "1px solid var(--hair-strong)",
+  borderRadius: 8,
+  padding: 10,
+  margin: "0 0 8px",
+  whiteSpace: "pre-wrap",
+  overflowX: "auto",
 };
 const ta: CSSProperties = {
   width: "100%",

@@ -6,12 +6,12 @@
 // is the contentless knock only; the person reaches their reading via the link
 // they already hold. Follow-gating doesn't make the tweet private; it's a consent
 // + anti-impersonation + deliverability gate: we only mention handles that opted
-// in by following @constello from the same handle they submitted, and mentions
+// in by following @03constello from the same handle they submitted, and mentions
 // from followers are filtered less.
 //
 // The follow requirement is ENFORCED upstream by the `verified` gate in
 // lib/notify/index.ts — a twitter contact is only mentioned once it's marked
-// verified (= confirmed to follow @constello). Verifying is manual for the alpha
+// verified (= confirmed to follow @03constello). Verifying is manual for the alpha
 // (the X follows-lookup is gated on low API tiers); an automated check can flip
 // `verified` later.
 //

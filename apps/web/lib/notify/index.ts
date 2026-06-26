@@ -60,7 +60,7 @@ export async function notifyReadingReady(args: {
   for (const c of contacts as Contact[]) {
     // Never notify an unverified contact. Email opt-in and the iMessage inbound
     // capture set verified=true at the point of consent; a twitter handle stays
-    // unverified until it's confirmed to follow @constello (the follow gate).
+    // unverified until it's confirmed to follow @03constello (the follow gate).
     if (!c.verified) continue;
 
     // Skip anything already sent for this exact (contact, kind, ref).

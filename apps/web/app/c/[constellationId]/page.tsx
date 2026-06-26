@@ -90,7 +90,7 @@ export default async function ConstellationPage({
 
       <AddEntry constellationId={constellationId} />
 
-      <NotifyMe constellationId={constellationId} />
+      <NotifyMe constellationId={constellationId} imessageNumber={process.env.IMESSAGE_NUMBER} />
 
       <p className="persist-flag">
         {fulfilled} read · {pending} pending · this link is your constellation —

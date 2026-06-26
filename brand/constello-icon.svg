@@ -1,0 +1,19 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Constello">
+  <rect x="0" y="0" width="64" height="64" rx="14" fill="#14171F"/>
+  <g stroke="#FFFFFF" stroke-opacity="0.3" stroke-width="1" stroke-linecap="round">
+    <line x1="14" y1="26" x2="30" y2="18"/>
+    <line x1="30" y1="18" x2="46" y2="26"/>
+    <line x1="30" y1="18" x2="33" y2="36"/>
+    <line x1="46" y1="26" x2="33" y2="36"/>
+    <line x1="33" y1="36" x2="52" y2="44"/>
+    <line x1="33" y1="36" x2="20" y2="44"/>
+  </g>
+  <circle cx="14" cy="26" r="2" fill="#FFFFFF"/>
+  <circle cx="30" cy="18" r="2" fill="#FFFFFF"/>
+  <circle cx="46" cy="26" r="2" fill="#FFFFFF"/>
+  <circle cx="52" cy="44" r="2" fill="#FFFFFF"/>
+  <circle cx="20" cy="44" r="2" fill="#FFFFFF"/>
+  <circle cx="40" cy="50" r="1.2" fill="#FFFFFF" fill-opacity="0.7"/>
+  <circle cx="33" cy="36" r="7" fill="#BFD0FF" fill-opacity="0.16"/>
+  <circle cx="33" cy="36" r="3.2" fill="#FFFFFF"/>
+</svg>
