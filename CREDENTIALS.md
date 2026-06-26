@@ -50,10 +50,14 @@ These unblock milestones 2.1–2.4.
 
 ### Pinterest
 
-- [ ] **Pinterest Developer App** created. You'll need to register an app on developers.pinterest.com to get a client ID and client secret for OAuth.
-- [ ] **OAuth redirect URI** set to your dev URL (e.g. `http://localhost:3000/api/auth/pinterest/callback`) and later to your deployed Vercel URL.
-- [ ] **Scope decision**: minimum scope to read user's boards + pins. Skip secret boards by default per `CONSTELLO_BUILD.md §6.1`.
-- [ ] **Ethan's Pinterest account** is the first real test data. Anything in there you'd want excluded from Constello's reading? (Defaulting to: only public boards read; you can flag any to skip.)
+**Adapter + OAuth connect flow BUILT** (2026-06-26). Boards are a collection type: a "Connect Pinterest" tab on the homepage + add-piece flow starts the authorization-code flow at `GET /api/auth/pinterest`; the callback (`/api/auth/pinterest/callback`) trades the code for a token, pulls boards + sampled pins once via `apps/web/lib/collections/pinterest.ts`, formats them into one pending entry (`Pinterest · @user`, read by hand), and discards the token. Scopes: `user_accounts:read,boards:read,pins:read` (public only — secret boards skipped per `CONSTELLO_BUILD.md §6.1`). Public boards only; no token stored.
+
+To turn it on live (console steps only Ethan can do):
+- [ ] **Pinterest Developer App** created at developers.pinterest.com → gives the **App ID (client ID)** and **client secret**. Secret in hand: `e0bd329…dd3b18156363`; **client ID still needed**.
+- [ ] **OAuth redirect URI** registered on the app, exactly: `https://constello.xyz/api/auth/pinterest/callback` (and `http://localhost:3000/api/auth/pinterest/callback` for dev).
+- [ ] **Env in Vercel**: set `PINTEREST_CLIENT_ID` + `PINTEREST_CLIENT_SECRET` (all 3 envs). Optional `PINTEREST_REDIRECT_URI` to pin the callback if the proxy-derived origin is wrong.
+- [ ] **Trial mode**: a fresh Pinterest app only lets the owner + added test users authorize. Fine for the alpha cohort; needs Pinterest's app review to open to everyone.
+- [ ] **Ethan's Pinterest account** is the first real test data. (Defaulting to: only public boards read.)
 
 ### Last.fm
 

@@ -40,7 +40,7 @@ export interface Constellation {
 // What kind of collection an entry is. 'text' is pasted/uploaded writing; the
 // others are fetched from an API and formatted into raw_text by an adapter
 // (lib/collections/*). The reading itself is still fulfilled by hand.
-export type EntrySource = "text" | "lastfm" | "twitter";
+export type EntrySource = "text" | "lastfm" | "twitter" | "pinterest";
 
 export interface Entry {
   id: string;

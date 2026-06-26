@@ -31,8 +31,9 @@ create index if not exists signature_history_constellation_idx
 -- One collection the person submitted. The act of including it is the signal.
 -- "pending" = an entry with no reading row yet (Ethan fulfills by hand).
 -- `source` is the collection type: 'text' (pasted/uploaded writing), 'lastfm',
--- or 'twitter'. The non-text sources are fetched from an API and formatted into
--- raw_text by an adapter (lib/collections/*); the reading is still by hand.
+-- 'twitter', or 'pinterest'. The non-text sources are fetched from an API and
+-- formatted into raw_text by an adapter (lib/collections/*); the reading is
+-- still by hand.
 create table if not exists entries (
   id                uuid primary key default gen_random_uuid(),
   constellation_id  uuid not null references constellations(id) on delete cascade,
@@ -55,7 +56,7 @@ create index if not exists entries_constellation_idx on entries(constellation_id
 -- btree's row-size limit). Assumes no pre-existing duplicates in the table.
 create unique index if not exists entries_label_uniq
   on entries (source, lower(label))
-  where source in ('lastfm', 'twitter');
+  where source in ('lastfm', 'twitter', 'pinterest');
 create unique index if not exists entries_text_uniq
   on entries (md5(raw_text))
   where source = 'text';

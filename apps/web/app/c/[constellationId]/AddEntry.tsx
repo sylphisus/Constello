@@ -3,14 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-// Add another collection to an existing constellation. Three sources:
-//   - text:    paste / upload writing            → /api/submit
-//   - lastfm:  a Last.fm username (listening)     → /api/collections/lastfm
-//   - twitter: an X / Twitter handle (posting)    → /api/collections/twitter
+// Add another collection to an existing constellation. Four sources:
+//   - text:      paste / upload writing          → /api/submit
+//   - lastfm:    a Last.fm username (listening)   → /api/collections/lastfm
+//   - twitter:   an X / Twitter handle (posting)  → /api/collections/twitter
+//   - pinterest: connect (OAuth) their boards     → /api/auth/pinterest
 // All are stored pending; the reading is fulfilled by hand later. No title
 // field — a title, if any, lives inside the piece.
 
-type Mode = "text" | "lastfm" | "twitter";
+type Mode = "text" | "lastfm" | "twitter" | "pinterest";
 
 export default function AddEntry({ constellationId }: { constellationId: string }) {
   const router = useRouter();
@@ -78,7 +79,7 @@ export default function AddEntry({ constellationId }: { constellationId: string 
   return (
     <div className="section-gap">
       <div className="mode-tabs">
-        {(["text", "lastfm", "twitter"] as Mode[]).map((m) => (
+        {(["text", "lastfm", "twitter", "pinterest"] as Mode[]).map((m) => (
           <button
             key={m}
             className="mode-tab"
@@ -88,7 +89,7 @@ export default function AddEntry({ constellationId }: { constellationId: string 
               setError("");
             }}
           >
-            {m === "text" ? "Text" : m === "lastfm" ? "Last.fm" : "X"}
+            {m === "text" ? "Text" : m === "lastfm" ? "Last.fm" : m === "twitter" ? "X" : "Pinterest"}
           </button>
         ))}
       </div>
@@ -112,6 +113,11 @@ export default function AddEntry({ constellationId }: { constellationId: string 
             </label>
           </div>
         </>
+      ) : mode === "pinterest" ? (
+        <p className="framing">
+          Connect Pinterest to add the worlds in your boards. Only your public
+          boards are read.
+        </p>
       ) : (
         <input
           className="handle-input"
@@ -123,9 +129,22 @@ export default function AddEntry({ constellationId }: { constellationId: string 
       )}
 
       <div className="actions" style={{ marginTop: 12 }}>
-        <button className="primary-btn" disabled={!ready || busy} onClick={add}>
-          {busy ? "Adding…" : "Add piece"}
-        </button>
+        {mode === "pinterest" ? (
+          <button
+            className="primary-btn"
+            onClick={() =>
+              (window.location.href = `/api/auth/pinterest?constellationId=${encodeURIComponent(
+                constellationId,
+              )}`)
+            }
+          >
+            Connect Pinterest
+          </button>
+        ) : (
+          <button className="primary-btn" disabled={!ready || busy} onClick={add}>
+            {busy ? "Adding…" : "Add piece"}
+          </button>
+        )}
         <button className="ghost-btn" onClick={() => setOpen(false)}>
           Cancel
         </button>

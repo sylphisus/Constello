@@ -1,16 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 // Landing / first entry. Stores the first piece (no model call) and routes the
 // person to their constellation, where readings appear as they're fulfilled by
-// hand. Three sources, same as the add-piece flow:
-//   - text:    paste / upload writing        → /api/submit
-//   - lastfm:  a Last.fm username            → /api/collections/lastfm
-//   - twitter: an X / Twitter handle         → /api/collections/twitter
+// hand. Four sources, same as the add-piece flow:
+//   - text:      paste / upload writing      → /api/submit
+//   - lastfm:    a Last.fm username          → /api/collections/lastfm
+//   - twitter:   an X / Twitter handle       → /api/collections/twitter
+//   - pinterest: connect (OAuth) their boards → /api/auth/pinterest
 // No title field — if a piece needs a title, it lives inside the piece.
-type Mode = "text" | "lastfm" | "twitter";
+type Mode = "text" | "lastfm" | "twitter" | "pinterest";
 
 export default function Home() {
   const router = useRouter();
@@ -19,6 +20,17 @@ export default function Home() {
   const [handle, setHandle] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+
+  // The Pinterest connect flow round-trips through Pinterest and lands back here
+  // with ?pinterestError on failure (declined consent, expired session, etc.).
+  useEffect(() => {
+    const err = new URLSearchParams(window.location.search).get("pinterestError");
+    if (err) {
+      setMode("pinterest");
+      setError(err);
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, []);
 
   const ready = mode === "text" ? rawText.trim() : handle.trim();
 
@@ -67,7 +79,7 @@ export default function Home() {
       </p>
 
       <div className="mode-tabs">
-        {(["text", "lastfm", "twitter"] as Mode[]).map((m) => (
+        {(["text", "lastfm", "twitter", "pinterest"] as Mode[]).map((m) => (
           <button
             key={m}
             className="mode-tab"
@@ -77,7 +89,7 @@ export default function Home() {
               setError("");
             }}
           >
-            {m === "text" ? "Text" : m === "lastfm" ? "Last.fm" : "X"}
+            {m === "text" ? "Text" : m === "lastfm" ? "Last.fm" : m === "twitter" ? "X" : "Pinterest"}
           </button>
         ))}
       </div>
@@ -101,6 +113,11 @@ export default function Home() {
             </label>
           </div>
         </>
+      ) : mode === "pinterest" ? (
+        <p className="framing">
+          Connect Pinterest to read the worlds in your boards — what you kept, and
+          why these and not others. Only your public boards are read.
+        </p>
       ) : (
         <input
           className="handle-input"
@@ -112,9 +129,18 @@ export default function Home() {
       )}
 
       <div className="actions" style={{ marginTop: 16 }}>
-        <button className="primary-btn" disabled={!ready || busy} onClick={begin}>
-          {busy ? "Beginning…" : "Begin"}
-        </button>
+        {mode === "pinterest" ? (
+          <button
+            className="primary-btn"
+            onClick={() => (window.location.href = "/api/auth/pinterest")}
+          >
+            Connect Pinterest
+          </button>
+        ) : (
+          <button className="primary-btn" disabled={!ready || busy} onClick={begin}>
+            {busy ? "Beginning…" : "Begin"}
+          </button>
+        )}
       </div>
       {error && <p className="error">{error}</p>}
     </main>

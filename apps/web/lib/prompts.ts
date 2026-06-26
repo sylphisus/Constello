@@ -25,6 +25,7 @@ const NODE_READING_INSTRUCTIONS: Record<EntrySource, string> = {
   text: ``,
   lastfm: ``,
   twitter: ``,
+  pinterest: ``,
 };
 
 export function nodeReadingMessages(

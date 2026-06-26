@@ -10,8 +10,9 @@ export type CreateEntryResult =
   | { ok: false; status: number; error: string };
 
 // A collection's identity, used to dedupe globally. The non-text sources carry
-// it in their deterministic label (`X · @handle`, `Last.fm · user`); text has no
-// reliable label, so the pasted body itself is the identity. Returns the entry
+// it in their deterministic label (`X · @handle`, `Last.fm · user`, `Pinterest ·
+// @user`); text has no reliable label, so the pasted body itself is the
+// identity. Returns the entry
 // (and its constellation) that already holds this collection, or null.
 export async function findDuplicateEntry(
   db: NonNullable<ReturnType<typeof supabase>>,
