@@ -52,12 +52,13 @@ These unblock milestones 2.1–2.4.
 
 **Adapter + OAuth connect flow BUILT** (2026-06-26). Boards are a collection type: a "Connect Pinterest" tab on the homepage + add-piece flow starts the authorization-code flow at `GET /api/auth/pinterest`; the callback (`/api/auth/pinterest/callback`) trades the code for a token, pulls boards + sampled pins once via `apps/web/lib/collections/pinterest.ts`, formats them into one pending entry (`Pinterest · @user`, read by hand), and discards the token. Scopes: `user_accounts:read,boards:read,pins:read` (public only — secret boards skipped per `CONSTELLO_BUILD.md §6.1`). Public boards only; no token stored.
 
-To turn it on live (console steps only Ethan can do):
-- [ ] **Pinterest Developer App** created at developers.pinterest.com → gives the **App ID (client ID)** and **client secret**. Client secret already provided (kept out of the repo — goes in Vercel env only); **client ID (App ID) still needed**.
-- [ ] **OAuth redirect URI** registered on the app, exactly: `https://constello.xyz/api/auth/pinterest/callback` (and `http://localhost:3000/api/auth/pinterest/callback` for dev).
-- [ ] **Env in Vercel**: set `PINTEREST_CLIENT_ID` + `PINTEREST_CLIENT_SECRET` (all 3 envs). Optional `PINTEREST_REDIRECT_URI` to pin the callback if the proxy-derived origin is wrong.
-- [ ] **Trial mode**: a fresh Pinterest app only lets the owner + added test users authorize. Fine for the alpha cohort; needs Pinterest's app review to open to everyone.
-- [ ] **Ethan's Pinterest account** is the first real test data. (Defaulting to: only public boards read.)
+**Live + wired (2026-06-26):** App ID `1584975`. `PINTEREST_CLIENT_ID` + `PINTEREST_CLIENT_SECRET` set in Vercel (all 3 envs, encrypted); production redeployed. Verified live: the initiator 307-redirects to `pinterest.com/oauth` with the real client_id/scopes/state+cookie, and the callback completes state-verify → token-exchange (Pinterest itself now answers).
+
+Remaining to pull real boards:
+- [ ] **Exact redirect URI**: the canonical domain is **www** (apex 308s to www), so the live callback is `https://www.constello.xyz/api/auth/pinterest/callback` — register THAT exact string on the Pinterest app (plus `http://localhost:3000/...` for dev). A non-www registration will fail redirect_uri match.
+- [ ] **Trial mode**: a fresh Pinterest app only lets the app owner + added test users authorize. The first connect must be Ethan's own (owner) account; add testers in the app dashboard for the cohort. App review opens it to everyone.
+- [ ] **Real connect** = click "Connect Pinterest" → log into Pinterest → grant → boards land as a pending `Pinterest · @user` entry. (Only public boards read.)
+- [ ] **Rotate the client secret** — it was shared in chat; regenerate and re-set the Vercel env.
 
 ### Last.fm
 
