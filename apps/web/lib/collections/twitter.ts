@@ -11,6 +11,7 @@ export interface TwitterProfile {
   handle: string; // without the leading '@'
   displayName: string | null;
   bio: string | null;
+  avatarUrl: string | null; // profile picture (pfp) URL
   location: string | null;
   followersCount: number | null;
   followingCount: number | null;
@@ -31,10 +32,15 @@ export interface TwitterData {
 // ── Fetch (swap point) ─────────────────────────────────────────────────────────
 
 /**
- * Not wired yet — the API source is being decided. To connect: implement this to
- * return a normalized TwitterData (profile + recent tweets, most recent first)
- * from whatever provider we land on, gated on its credential env var. Everything
- * downstream (formatTwitter, the route, the UI) already works against this shape.
+ * Live in-app fetch is intentionally NOT wired. For the alpha, X ingestion runs
+ * off-platform via the local bridge: the twitter-preservation tool captures a
+ * handle (session cookie stays on the operator's machine) and pushes a normalized
+ * TwitterData to POST /api/admin/ingest-twitter, which reuses formatTwitter +
+ * createEntry. See CREDENTIALS.md § X / Twitter.
+ *
+ * This stub remains the future swap point: to fetch in-app, implement it to return
+ * TwitterData from an official source (e.g. X API v2), gated on its credential env
+ * var. Everything downstream already works against this shape.
  */
 export async function fetchTwitter(_handle: string): Promise<TwitterData> {
   throw new Error(
@@ -52,6 +58,7 @@ export function formatTwitter(data: TwitterData): { label: string; rawText: stri
   const name = p.displayName ? ` (${p.displayName})` : "";
   lines.push(`X / Twitter profile for @${p.handle}${name}.`);
   if (p.bio) lines.push(`Bio: ${p.bio}`);
+  if (p.avatarUrl) lines.push(`Profile image: ${p.avatarUrl}`);
   if (p.location) lines.push(`Location: ${p.location}`);
   if (p.joined) lines.push(`Joined: ${p.joined}`);
   if (p.followersCount != null || p.followingCount != null) {

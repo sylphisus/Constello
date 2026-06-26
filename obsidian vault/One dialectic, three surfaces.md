@@ -42,7 +42,7 @@ This is the *you're less* engine running on the attention surface — the same e
 
 ## Synthesis expression one: Constello, for connection
 
-A platform built around resonance rather than rating is a structural answer to looksmaxxing, not just an aesthetic alternative. The absence of social infrastructure for depth doesn't produce neutrality — it produces a pressure toward the coarser registers that *do* have infrastructure (sex, drama, appearance, performance), and that pressure has been compounding for decades. Looksmaxxing is what happens when the only available infrastructure is appearance-as-rating. So looksmaxxing names the symptom and Constello's thesis names the cause — the two are pincers on the same claim. Constello's product expression is already drafting the synthesis: moving connection from *being seen* to *being known*.
+A platform built around resonance rather than rating is a structural answer to looksmaxxing, not just an aesthetic alternative. The absence of social infrastructure for depth doesn't produce neutrality — it produces a pressure toward the coarser registers that *do* have infrastructure (sex, drama, appearance, performance), and that pressure has been compounding for decades. Looksmaxxing is what happens when the only available infrastructure is appearance-as-rating. So looksmaxxing names the symptom and Constello's thesis names the cause[^deepening] — the two are pincers on the same claim. Constello's product expression is already drafting the synthesis: moving connection from *being seen* to *being known*.
 
 ## Synthesis expression two: the whitepill streamer, for register
 
@@ -69,3 +69,5 @@ This is the structurally identical synthesis move to Constello's, on a different
 - Is the antithesis still consolidating, or has it already fragmented into competing sub-movements (forum culture vs. broader self-improvement tendency), some of which can synthesize and some of which can't?
 - What conditions does the synthesis need to arrive culturally, not just philosophically? Is it waiting on infrastructure (Constello-type platforms), figureheads (the whitepill streamer), or something else?
 - The forum users are notably young (13 in one screenshot). The dialectic is being arrested at the antithesis stage for a generation that never internalized the thesis. What does that do to the dialectical motion?
+
+[^deepening]: [[Constello — Architectural Deepening]]

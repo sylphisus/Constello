@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { notifyReadingReady } from "@/lib/notify";
 
 export const runtime = "nodejs";
 
@@ -30,6 +31,13 @@ export async function POST(req: Request) {
     { onConflict: "constellation_id" },
   );
   if (error) return NextResponse.json({ error: error.message }, { status: 502 });
+
+  // Notify the person their essence landed (best-effort; never fails the save).
+  try {
+    await notifyReadingReady({ constellationId, kind: "essence", ref: constellationId });
+  } catch (err) {
+    console.error("[admin/essence] notify failed:", err);
+  }
 
   return NextResponse.json({ ok: true });
 }

@@ -256,14 +256,6 @@ textarea.body-input:focus {
   line-height: 1.14;
   color: var(--ink);
 }
-.reading-card .reading {
-  font-size: 15.5px;
-  line-height: 1.66;
-  color: var(--essence);
-}
-.reading-card .reading p {
-  margin-bottom: 14px;
-}
 
 /* ── the essence synthesis ─────────────────────────────────────────────── */
 .essence-block {
@@ -277,16 +269,6 @@ textarea.body-input:focus {
   text-transform: uppercase;
   color: var(--red);
   margin-bottom: 24px;
-}
-.essence-text {
-  font-family: var(--serif);
-  font-size: 18.5px;
-  line-height: 1.66;
-  color: var(--essence);
-  font-weight: 400;
-}
-.essence-text p {
-  margin-bottom: 20px;
 }
 
 .section-gap {

@@ -12,6 +12,7 @@ Hand-maintained map. Read [[CORE]] first for what Constello is and how the vault
 
 - [[Why the attention economy fails]] — the like as a flawed binary currency; the same failure stated structurally as intensity collapse (dimensional, not moral); and how it becomes the cultural "you're less" engine.
 - [[One dialectic, three surfaces]] — one Hegelian dialectic running on validation, cultural register, and the body at once; the looksmaxxing analysis in full; and the two synthesis-expressions reaching for it — Constello (connection) and the whitepill streamer (register).
+- [[The broad-to-niche funnel as the mechanism of exile]] — the person as alien meeting their own species (same sky, NOT "different worlds rhyming"); the broad→niche funnel as the mechanism that scatters kin so recognition never happens; algorithms as vector-embedding models, and Constello as the same machine pointed sideways.
 
 ## Product and go-to-market
 

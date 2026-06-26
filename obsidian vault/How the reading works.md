@@ -26,7 +26,7 @@ The rule applies the whole way down:
 
 > "Each person's constellation gets compiled, once per data refresh, into a high-fidelity essence synthesis — a written artifact, maybe 2,000–4,000 tokens, that captures the person densely and idiosyncratically. Not bullet points, not categories. Something close to literature. The way a perceptive friend would describe you to someone they were introducing you to. This is the expensive part, and it only runs when your collections change. It's the load-bearing artifact of the whole system."
 >
-> — Claude, conversation Nov 14 2026
+> — Claude
 
 This is where the calibration has to hold most. The synthesis is the compiled portrait everything downstream reads against; if it stops at the material, every match built on it is adjacent-material matching wearing literary prose.
 
@@ -34,7 +34,7 @@ This is where the calibration has to hold most. The synthesis is the compiled po
 
 > "You compose yourself for the reading the way you'd compose yourself for an exhibition: choose what to include, what to emphasize, what to leave out, and then let the work speak for itself. You don't get to write the catalogue essay. The model writes that."
 >
-> — Claude, conversation Nov 14 2026 (revised from an earlier flawed framing about an "uncurated self")
+> — Claude (revised from an earlier flawed framing about an "uncurated self")
 
 Every other platform lets the user write their own profile copy and pins their real identity to it. Constello inverts *who authors the description*. Legal identity goes away (chosen names); the user composes by *selecting collections* rather than by *writing description*; and the model authors the reading on the material submitted.
 
@@ -67,6 +67,6 @@ Performance is detectable across collections, even when it isn't within any one 
 
 > "performance is detectable, maybe not in an individual collection, but inevitably within a constellation."
 >
-> — Ethan, conversation Nov 14 2026
+> — Ethan
 
 AI made performance *legible at the constellation level* — not as a defended-against threat, but as one of many things a careful reader notices. A model good enough to read a person well is also good enough to read when someone is reaching for the camera. That's what lets the system stay relaxed about everything downstream: no scoring system, no joint-distribution test, no anti-fake architecture, because the same capability that makes the product work makes performance visible as a feature of any portrait that contains it.

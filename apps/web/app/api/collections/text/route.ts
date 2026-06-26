@@ -31,7 +31,7 @@ export async function POST(req: Request) {
   let title: string;
   let reading: string;
   try {
-    const { system, user } = nodeReadingMessages(submission);
+    const { system, user } = nodeReadingMessages(submission, "text");
     const message = await anthropic().messages.create({
       model: MODELS.nodeReading,
       max_tokens: 16000,

@@ -51,7 +51,13 @@ export default function AddEntry({ constellationId }: { constellationId: string 
       setRawText("");
       setHandle("");
       setOpen(false);
-      router.refresh();
+      // This collection may already live on another constellation (dedupe is
+      // global) — in that case route there; otherwise just refresh this one.
+      if (data.constellationId && data.constellationId !== constellationId) {
+        router.push(`/c/${data.constellationId}`);
+      } else {
+        router.refresh();
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not add.");
     } finally {

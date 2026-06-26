@@ -45,10 +45,7 @@ These unblock milestones 2.1–2.4.
 ### Anthropic API setup
 
 - [ ] **Model access verified** on your Anthropic account:
-  - Sonnet 4.6 (`claude-sonnet-4-6`) — synthesis + pairwise reads
-  - Haiku 4.5 (`claude-haiku-4-5-20251001`) — node readings
-  - Opus 4.7 (`claude-opus-4-7`) — for the side-by-side at 3.2; can skip if 3.2 is deferred
-  - Vision: Sonnet 4.6 vision endpoint — Pinterest images, sticker/gif frames
+  - opus for everything.
 - [ ] **Spending limit** decided. Phase 2 + 3 on Ethan's own collection is plausibly under $5; full first-cohort rollout (Phase 4) at ~15 users with side-by-side experiments could land in the $50–200 range. Set a guardrail.
 
 ### Pinterest
@@ -65,7 +62,8 @@ These unblock milestones 2.1–2.4.
 
 ### X / Twitter
 
-- [ ] **Decide the fetch source.** The adapter's formatter and route are built (`apps/web/lib/collections/twitter.ts`, `/api/collections/twitter`), but `fetchTwitter` is a stub — it's the single swap point. Wire it to whatever source you land on (official X API v2, or a third-party) so it returns the normalized `TwitterData` (profile + recent posts). Gate it on that provider's credential env var.
+- [x] **Fetch source decided: local bridge** (2026-06-24). X has no free API and live in-app scraping would mean a personal session cookie in prod (ToS-risky, expires, rate-limited, won't scale). For the hand-fulfilled alpha, scraping stays *off-platform*: the `twitter-preservation` tool (gallery-dl + a local session cookie in `.context/`) captures a handle, and `constello-x` pushes the normalized `TwitterData` to the new admin route `POST /api/admin/ingest-twitter` (Basic-auth), which reuses `formatTwitter` + `createEntry`. The deployed app never scrapes and holds no cookie. The in-app `fetchTwitter` stub stays unwired — it's the future swap point for an official source if Constello opens up.
+- [ ] `**CONSTELLO_ADMIN_PASSWORD*`* available locally where the scraper runs (matches Vercel's `ADMIN_PASSWORD`), so `constello-x` can authenticate to the ingest route.
 - [ ] **Ethan's handle** for the first real run.
 
 ### Claude memory
@@ -80,6 +78,15 @@ These unblock milestones 2.1–2.4.
 ### General text
 
 - [ ] **No account or key needed** — uses the Haiku model already listed above. Just bring a few of your own texts for the first real run (§6.5 / milestone 2.5): something genuinely accumulated, and ideally one authored creative piece (a song, character writing) so we can confirm the reading treats authored material as prime signal rather than penalizing it.
+
+### Notifications ("your reading is ready")
+
+Built 2026-06-26 (branch `alpha-manual-readings`). Three channels, all best-effort + env-gated (a missing key skips that channel, never breaks a save), fired from the admin reading/essence save. Private channels carry the constellation link (a bearer URL); a public mention never can. Schema: `contacts` + `notifications` tables in `migration.alpha.sql` (**re-run the migration**). Opt-in: email from the constellation page (`NotifyMe`), X handle auto-captured from the X tab, iMessage via the inbound "text us first" webhook.
+
+- [ ] `**APP_URL`** — base for notification links (defaults to `https://constello.xyz` if unset). Set in Vercel.
+- [ ] **Email — Resend**: create a [Resend](https://resend.com) account, verify a sending domain, then set `**RESEND_API_KEY`** + `**RESEND_FROM**` (e.g. `Constello <readings@constello.xyz>`). Free tier ~3k/mo. This is the one channel that needs no device-side setup and reaches every iPhone.
+- [ ] **iMessage — Photon** (`spectrum-ts`, installed): create a [Photon](https://photon.codes) project + a managed iMessage line, then set `**PHOTON_PROJECT_ID`**, `**PHOTON_PROJECT_SECRET**` (outbound) and `**PHOTON_WEBHOOK_SECRET**` (inbound HMAC). Register the webhook at `POST /api/inbound/imessage`. ⚠️ Confirm the real webhook header + payload field names against a live Spectrum request — the handler reads them defensively but they're unverified. ⚠️ Managed iMessage is grey-area (Macs running Messages); reliability/ToS is a bet. Heavy dep (147 pkgs), loaded only via dynamic import when the keys are set.
+- [ ] **X / Twitter — public mention, follow-gated**: set `**X_USER_TOKEN`** (OAuth2 user-context token with `tweet.write` + `users.read`). The notification is a public `@handle` mention from @constello — the **knock only, never the bearer link** (a public tweet is visible to all; follow-gating doesn't change that). Only fires once the handle is **verified** as a follower of @constello (the `verified` flag on the contact). Verifying is **manual for the alpha** — the X follows-lookup is gated on low API tiers; flip `verified` by hand (or wire an automated check if the tier supports it). ⚠️ Reintroduces an X credential in prod, which the project otherwise keeps off-platform (the bridge above) — a deliberate reversal to weigh.
 
 ---
 

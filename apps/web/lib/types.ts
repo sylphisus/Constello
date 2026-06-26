@@ -27,7 +27,7 @@ export interface Synthesis {
 }
 
 // ── Manual alpha (branch: alpha-manual-readings) ─────────────────────────────
-// A person IS a constellation. Readings/essences are model-authored HTML
+// A person IS a constellation. Readings/essences are model-authored markdown
 // artifacts, fulfilled by hand. `signature` is the embedding-derived live shape,
 // null until the first reading exists.
 
@@ -51,7 +51,7 @@ export interface Entry {
   createdAt: string;
 }
 
-/** One reading per entry. The artifact is a self-contained HTML world. */
+/** One reading per entry. The artifact is a self-contained markdown world. */
 export interface Reading {
   id: string;
   entryId: string;

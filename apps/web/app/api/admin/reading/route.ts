@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { notifyReadingReady } from "@/lib/notify";
 
 export const runtime = "nodejs";
 
@@ -33,6 +34,24 @@ export async function POST(req: Request) {
     .from("readings")
     .upsert({ entry_id: entryId, artifact }, { onConflict: "entry_id" });
   if (error) return NextResponse.json({ error: error.message }, { status: 502 });
+
+  // Notify the person their reading landed (best-effort; never fails the save).
+  try {
+    const { data: entry } = await db
+      .from("entries")
+      .select("constellation_id")
+      .eq("id", entryId)
+      .maybeSingle();
+    if (entry?.constellation_id) {
+      await notifyReadingReady({
+        constellationId: entry.constellation_id,
+        kind: "reading",
+        ref: entryId,
+      });
+    }
+  } catch (err) {
+    console.error("[admin/reading] notify failed:", err);
+  }
 
   return NextResponse.json({ ok: true });
 }

@@ -1,14 +1,17 @@
-import type { CSSProperties } from "react";
 import { notFound } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { buildReadingDoc } from "@/lib/reading-doc";
 import AddEntry from "./AddEntry";
+import NotifyMe from "./NotifyMe";
+import ReadingFrame from "./ReadingFrame";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic"; // pending → fulfilled should always be fresh
 
-// A constellation: its fulfilled readings (each rendered as its own sealed
-// world) and its pending pieces. The uuid is the stable link the person returns
-// to; the signature (the live shape) appears once it's been read + embedded.
+// A constellation: its fulfilled readings (each artifact sealed in its own
+// themed iframe — see ReadingFrame) and its pending pieces. The uuid is the
+// stable link the person returns to; the signature (the live shape) appears once it's
+// been read + embedded.
 export default async function ConstellationPage({
   params,
 }: {
@@ -65,24 +68,19 @@ export default async function ConstellationPage({
       </div>
 
       {essence?.artifact && (
-        <section className="section-gap">
+        <section className="essence-block">
           <p className="essence-eyebrow">Your essence</p>
-          <iframe sandbox="" srcDoc={essence.artifact} title="essence" style={frame} />
+          <ReadingFrame doc={buildReadingDoc(essence.artifact)} title="essence" />
         </section>
       )}
 
       {(entries ?? []).map((e) => {
         const artifact = readingByEntry.get(e.id);
         return (
-          <article className="section-gap" key={e.id}>
+          <article className="reading-card" key={e.id}>
             {e.label && <p className="essence-eyebrow">{e.label}</p>}
             {artifact ? (
-              <iframe
-                sandbox=""
-                srcDoc={artifact}
-                title={e.label || "reading"}
-                style={frame}
-              />
+              <ReadingFrame doc={buildReadingDoc(artifact)} title={e.label || "reading"} />
             ) : (
               <p className="thinking">being read…</p>
             )}
@@ -92,6 +90,8 @@ export default async function ConstellationPage({
 
       <AddEntry constellationId={constellationId} />
 
+      <NotifyMe constellationId={constellationId} />
+
       <p className="persist-flag">
         {fulfilled} read · {pending} pending · this link is your constellation —
         return to it
@@ -99,11 +99,3 @@ export default async function ConstellationPage({
     </main>
   );
 }
-
-const frame: CSSProperties = {
-  width: "100%",
-  height: 640,
-  border: "1px solid rgba(255,255,255,0.12)",
-  borderRadius: 12,
-  background: "transparent",
-};

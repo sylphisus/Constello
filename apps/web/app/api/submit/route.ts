@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { findDuplicateEntry } from "@/lib/collections/entries";
 import { supabase } from "@/lib/supabase";
 
 export const runtime = "nodejs";
@@ -29,6 +30,16 @@ export async function POST(req: Request) {
       { status: 500 },
     );
   }
+
+  // Global duplicate guard: if this exact text already exists anywhere, route to
+  // that constellation instead of creating a second entry.
+  const dup = await findDuplicateEntry(db, "text", label, rawText);
+  if (dup)
+    return NextResponse.json({
+      constellationId: dup.constellationId,
+      entryId: dup.id,
+      duplicate: true,
+    });
 
   // Resolve or create the constellation this entry belongs to.
   let constellationId = (body.constellationId ?? "").trim();

@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 
-// Fulfillment console (gated by Basic auth in middleware). Lists pending entries
-// with a copy-into-claude.ai block and a paste-the-artifact form, plus an
-// essence queue for constellations with 2+ readings.
+// Fulfillment console (gated by Basic auth in middleware). Three views:
+//  - a stats bar + roster of every constellation (the whole population),
+//  - the pending queue (entries with no reading yet), grouped by constellation,
+//  - the essence queue (constellations with 2+ readings).
 
 interface PendingEntry {
   id: string;
@@ -14,17 +15,53 @@ interface PendingEntry {
   raw_text: string;
   created_at: string;
 }
+interface RosterItem {
+  id: string;
+  createdAt: string;
+  signature: string | null;
+  entries: number;
+  readings: number;
+  sources: string[];
+  hasEssence: boolean;
+}
 interface EssenceItem {
   constellationId: string;
   readings: number;
   hasEssence: boolean;
 }
+interface PendingFollow {
+  contactId: string;
+  constellationId: string;
+  handle: string;
+  createdAt: string;
+}
+interface Stats {
+  constellations: number;
+  entries: number;
+  readings: number;
+  pending: number;
+  essences: number;
+}
 
 const PROMPT = "Conduct a personal analysis of this.";
 
+// "3d" / "5h" / "just now" — how long ago an ISO timestamp was.
+function ago(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(ms / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  return `${Math.floor(h / 24)}d`;
+}
+
 export default function Admin() {
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [roster, setRoster] = useState<RosterItem[]>([]);
   const [pending, setPending] = useState<PendingEntry[]>([]);
   const [essenceQueue, setEssenceQueue] = useState<EssenceItem[]>([]);
+  const [pendingFollows, setPendingFollows] = useState<PendingFollow[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
@@ -35,8 +72,11 @@ export default function Admin() {
       const res = await fetch("/api/admin/pending");
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to load.");
+      setStats(data.stats ?? null);
+      setRoster(data.constellations ?? []);
       setPending(data.pending ?? []);
       setEssenceQueue(data.essenceQueue ?? []);
+      setPendingFollows(data.pendingFollows ?? []);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Failed to load.");
     } finally {
@@ -47,28 +87,124 @@ export default function Admin() {
     load();
   }, []);
 
+  // Pending entries clustered under their constellation, oldest world first
+  // (the one that's been waiting longest leads).
+  const pendingGroups = useMemo(() => {
+    const m = new Map<string, PendingEntry[]>();
+    for (const e of pending) {
+      const arr = m.get(e.constellation_id) ?? [];
+      arr.push(e);
+      m.set(e.constellation_id, arr);
+    }
+    return [...m.entries()]
+      .map(([constellationId, entries]) => ({ constellationId, entries }))
+      .sort((a, b) =>
+        a.entries[0].created_at.localeCompare(b.entries[0].created_at),
+      );
+  }, [pending]);
+
   return (
     <main style={page}>
-      <h1>Constello · admin</h1>
-      {err && <p style={{ color: "crimson" }}>{err}</p>}
+      <header style={head}>
+        <h1 style={mark}>Constello · admin</h1>
+        <button onClick={load} disabled={loading} style={ghostBtn}>
+          {loading ? "…" : "Refresh"}
+        </button>
+      </header>
+      {err && <p style={{ color: "var(--red)" }}>{err}</p>}
+
+      {stats && <StatBar stats={stats} />}
+
       {loading ? (
-        <p>Loading…</p>
+        <p style={{ color: "var(--ink-soft)" }}>Loading…</p>
       ) : (
         <>
-          <h2>Pending readings ({pending.length})</h2>
-          {pending.length === 0 && <p>Nothing pending.</p>}
-          {pending.map((e) => (
-            <PendingCard key={e.id} entry={e} onSaved={load} />
-          ))}
+          <Section title="Constellations" count={roster.length}>
+            {roster.length === 0 && <Empty>No constellations yet.</Empty>}
+            {roster.map((c) => (
+              <RosterRow key={c.id} item={c} />
+            ))}
+          </Section>
 
-          <h2 style={{ marginTop: 32 }}>Essence queue ({essenceQueue.length})</h2>
-          {essenceQueue.length === 0 && <p>No constellation has 2+ readings yet.</p>}
-          {essenceQueue.map((c) => (
-            <EssenceCard key={c.constellationId} item={c} onSaved={load} />
-          ))}
+          <Section title="Pending readings" count={pending.length}>
+            {pendingGroups.length === 0 && <Empty>Nothing pending.</Empty>}
+            {pendingGroups.map((g) => (
+              <div key={g.constellationId} style={group}>
+                <div style={groupHead}>
+                  <Cid id={g.constellationId} />
+                  <span style={dim}>
+                    {g.entries.length} pending · oldest {ago(g.entries[0].created_at)}
+                  </span>
+                </div>
+                {g.entries.map((e) => (
+                  <PendingCard key={e.id} entry={e} onSaved={load} />
+                ))}
+              </div>
+            ))}
+          </Section>
+
+          <Section title="Follow verification" count={pendingFollows.length}>
+            {pendingFollows.length === 0 && (
+              <Empty>No X handles awaiting a follow-check.</Empty>
+            )}
+            {pendingFollows.map((f) => (
+              <FollowCard key={f.contactId} item={f} onSaved={load} />
+            ))}
+          </Section>
+
+          <Section title="Essence queue" count={essenceQueue.length}>
+            {essenceQueue.length === 0 && (
+              <Empty>No constellation has 2+ readings yet.</Empty>
+            )}
+            {essenceQueue.map((c) => (
+              <EssenceCard key={c.constellationId} item={c} onSaved={load} />
+            ))}
+          </Section>
         </>
       )}
     </main>
+  );
+}
+
+function StatBar({ stats }: { stats: Stats }) {
+  const cells: [string, number][] = [
+    ["constellations", stats.constellations],
+    ["entries", stats.entries],
+    ["readings", stats.readings],
+    ["pending", stats.pending],
+    ["essences", stats.essences],
+  ];
+  return (
+    <div style={statBar}>
+      {cells.map(([label, n]) => (
+        <div key={label} style={statCell}>
+          <div style={statNum}>{n}</div>
+          <div style={statLabel}>{label}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RosterRow({ item }: { item: RosterItem }) {
+  return (
+    <a href={`/c/${item.id}`} target="_blank" rel="noreferrer" style={rosterRow}>
+      <span style={star(item.readings > 0)}>✦</span>
+      <Cid id={item.id} />
+      <span style={badges}>
+        {item.sources.map((s) => (
+          <span key={s} style={sourceBadge}>
+            {s}
+          </span>
+        ))}
+      </span>
+      <span style={dim}>
+        {item.readings}/{item.entries} read
+        {item.hasEssence && <span style={essenceDot}> · essence</span>}
+        {item.signature == null && <span> · unread</span>}
+      </span>
+      <span style={{ ...dim, marginLeft: "auto" }}>{ago(item.createdAt)}</span>
+    </a>
   );
 }
 
@@ -100,8 +236,7 @@ function PendingCard({ entry, onSaved }: { entry: PendingEntry; onSaved: () => v
   return (
     <section style={card}>
       <div style={meta}>
-        constellation {entry.constellation_id.slice(0, 8)} · {entry.source} ·{" "}
-        {entry.label || "(no label)"}
+        {entry.source} · {entry.label || "(no label)"} · {ago(entry.created_at)} ago
       </div>
       <p style={hint}>Copy into claude.ai:</p>
       <textarea
@@ -110,17 +245,17 @@ function PendingCard({ entry, onSaved }: { entry: PendingEntry; onSaved: () => v
         style={{ ...ta, height: 120 }}
         onFocus={(e) => e.currentTarget.select()}
       />
-      <p style={hint}>Paste the artifact HTML back:</p>
+      <p style={hint}>Paste the artifact markdown back:</p>
       <textarea
         value={artifact}
         onChange={(e) => setArtifact(e.target.value)}
         style={{ ...ta, height: 160 }}
-        placeholder="<div>…</div>"
+        placeholder="# …"
       />
       <button onClick={save} disabled={!artifact.trim() || busy} style={btn}>
         {busy ? "Saving…" : "Save reading"}
       </button>
-      {err && <p style={{ color: "crimson" }}>{err}</p>}
+      {err && <p style={{ color: "var(--red)" }}>{err}</p>}
     </section>
   );
 }
@@ -152,31 +287,239 @@ function EssenceCard({ item, onSaved }: { item: EssenceItem; onSaved: () => void
   return (
     <section style={card}>
       <div style={meta}>
-        constellation {item.constellationId.slice(0, 8)} · {item.readings} readings
+        <Cid id={item.constellationId} /> · {item.readings} readings
         {item.hasEssence ? " · has essence (re-paste to replace)" : ""}
       </div>
       <textarea
         value={artifact}
         onChange={(e) => setArtifact(e.target.value)}
         style={{ ...ta, height: 160, marginTop: 8 }}
-        placeholder="paste essence artifact HTML"
+        placeholder="paste essence artifact markdown"
       />
       <button onClick={save} disabled={!artifact.trim() || busy} style={btn}>
         {busy ? "Saving…" : "Save essence"}
       </button>
-      {err && <p style={{ color: "crimson" }}>{err}</p>}
+      {err && <p style={{ color: "var(--red)" }}>{err}</p>}
     </section>
   );
 }
 
+function FollowCard({ item, onSaved }: { item: PendingFollow; onSaved: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  async function verify() {
+    if (busy) return;
+    setBusy(true);
+    setErr("");
+    try {
+      const res = await fetch("/api/admin/verify-contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contactId: item.contactId, verified: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed.");
+      onSaved();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Failed.");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section style={card}>
+      <div style={meta}>
+        <Cid id={item.constellationId} /> · {item.handle} · {ago(item.createdAt)} ago
+      </div>
+      <p style={hint}>
+        Confirm {item.handle} follows @constello, then verify — only then does a
+        public mention go out.
+      </p>
+      <a
+        href={`https://x.com/${item.handle.replace(/^@/, "")}`}
+        target="_blank"
+        rel="noreferrer"
+        style={{ ...ghostBtn, display: "inline-block", textDecoration: "none", marginRight: 8 }}
+      >
+        Open {item.handle} ↗
+      </a>
+      <button onClick={verify} disabled={busy} style={btn}>
+        {busy ? "…" : "Verify — follows @constello"}
+      </button>
+      {err && <p style={{ color: "var(--red)" }}>{err}</p>}
+    </section>
+  );
+}
+
+// ── small presentational helpers ────────────────────────────────────────────
+
+function Section({
+  title,
+  count,
+  children,
+}: {
+  title: string;
+  count: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <section style={{ marginTop: 36 }}>
+      <h2 style={h2}>
+        {title} <span style={dim}>({count})</span>
+      </h2>
+      {children}
+    </section>
+  );
+}
+
+function Cid({ id }: { id: string }) {
+  return <code style={cid}>{id.slice(0, 8)}</code>;
+}
+
+function Empty({ children }: { children: React.ReactNode }) {
+  return <p style={{ color: "var(--ink-faint)", fontSize: 14 }}>{children}</p>;
+}
+
+// ── styles (Observatory tokens from globals.css) ────────────────────────────
+
 const page: CSSProperties = {
-  maxWidth: 820,
+  maxWidth: 860,
   margin: "0 auto",
-  padding: "2rem 1rem",
-  fontFamily: "system-ui, sans-serif",
+  padding: "2.5rem 1.25rem 6rem",
+  fontFamily: "var(--sans)",
+  color: "var(--ink)",
 };
-const card: CSSProperties = { border: "1px solid #ddd", borderRadius: 8, padding: 16, marginTop: 16 };
-const meta: CSSProperties = { fontSize: 12, color: "#888" };
-const hint: CSSProperties = { fontSize: 12, color: "#888", margin: "8px 0 4px" };
-const ta: CSSProperties = { width: "100%", fontFamily: "monospace", fontSize: 12, padding: 8, boxSizing: "border-box" };
-const btn: CSSProperties = { marginTop: 8, padding: "8px 14px", cursor: "pointer" };
+const head: CSSProperties = {
+  display: "flex",
+  alignItems: "baseline",
+  justifyContent: "space-between",
+  gap: 16,
+};
+const mark: CSSProperties = {
+  fontFamily: "var(--serif)",
+  fontWeight: 400,
+  fontSize: 26,
+  letterSpacing: 0.5,
+};
+const h2: CSSProperties = {
+  fontFamily: "var(--serif)",
+  fontWeight: 400,
+  fontSize: 19,
+  marginBottom: 12,
+};
+const dim: CSSProperties = { color: "var(--ink-faint)", fontWeight: 400, fontSize: 13 };
+
+const statBar: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(5, 1fr)",
+  gap: 1,
+  marginTop: 24,
+  border: "1px solid var(--hair)",
+  borderRadius: 10,
+  overflow: "hidden",
+  background: "var(--hair)",
+};
+const statCell: CSSProperties = {
+  background: "var(--bg-soft)",
+  padding: "16px 12px",
+  textAlign: "center",
+};
+const statNum: CSSProperties = { fontSize: 26, fontFamily: "var(--serif)", color: "var(--ink)" };
+const statLabel: CSSProperties = {
+  fontSize: 10,
+  letterSpacing: "0.14em",
+  textTransform: "uppercase",
+  color: "var(--ink-faint)",
+  marginTop: 4,
+};
+
+const rosterRow: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+  padding: "11px 14px",
+  borderBottom: "1px solid var(--hair)",
+  textDecoration: "none",
+  color: "var(--ink-soft)",
+  fontSize: 13,
+};
+const star = (lit: boolean): CSSProperties => ({
+  color: lit ? "var(--ink)" : "var(--ink-faint)",
+  fontSize: 12,
+  opacity: lit ? 1 : 0.5,
+});
+const badges: CSSProperties = { display: "flex", gap: 5 };
+const sourceBadge: CSSProperties = {
+  fontSize: 10,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+  color: "var(--ink-faint)",
+  border: "1px solid var(--hair-strong)",
+  borderRadius: 4,
+  padding: "1px 6px",
+};
+const essenceDot: CSSProperties = { color: "var(--essence)" };
+
+const group: CSSProperties = {
+  marginTop: 18,
+  paddingTop: 4,
+  borderTop: "1px solid var(--hair)",
+};
+const groupHead: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+  padding: "8px 0",
+};
+
+const card: CSSProperties = {
+  border: "1px solid var(--hair)",
+  borderRadius: 10,
+  padding: 16,
+  marginTop: 12,
+  background: "var(--bg-soft)",
+};
+const meta: CSSProperties = { fontSize: 12, color: "var(--ink-faint)" };
+const hint: CSSProperties = { fontSize: 12, color: "var(--ink-faint)", margin: "10px 0 4px" };
+const cid: CSSProperties = {
+  fontFamily: "ui-monospace, monospace",
+  fontSize: 12,
+  color: "var(--ink)",
+  background: "var(--field-bg)",
+  border: "1px solid var(--hair)",
+  borderRadius: 4,
+  padding: "1px 6px",
+};
+const ta: CSSProperties = {
+  width: "100%",
+  fontFamily: "ui-monospace, monospace",
+  fontSize: 12,
+  padding: 10,
+  boxSizing: "border-box",
+  background: "var(--bg)",
+  color: "var(--ink)",
+  border: "1px solid var(--hair-strong)",
+  borderRadius: 8,
+  resize: "vertical",
+};
+const btn: CSSProperties = {
+  marginTop: 10,
+  padding: "8px 16px",
+  cursor: "pointer",
+  background: "var(--ink)",
+  color: "var(--bg)",
+  border: "none",
+  borderRadius: 7,
+  fontSize: 13,
+  fontWeight: 500,
+};
+const ghostBtn: CSSProperties = {
+  padding: "6px 14px",
+  cursor: "pointer",
+  background: "transparent",
+  color: "var(--ink-soft)",
+  border: "1px solid var(--hair-strong)",
+  borderRadius: 7,
+  fontSize: 12,
+};

@@ -5,7 +5,7 @@
 // genuinely there and to say less (or nothing) when little is. See the
 // prompt-strategy note in memory (2026-06-17).
 
-import type { Node, TextSubmission } from "./types";
+import type { EntrySource, Node, TextSubmission } from "./types";
 
 /** Submissions are sent whole — no truncation. Opus gets the full material. */
 export function sampleRaw(text: string): string {
@@ -18,18 +18,29 @@ export function sampleRaw(text: string): string {
 // label. No length guidance — the model says as much or as little as the
 // material warrants.
 
-const NODE_READING_INSTRUCTION = `Conduct a personal analysis of this.`;
+// One instruction per collection type. Each is hand-written to give Opus the
+// context specific to that kind of material. Keep them neutral (see the note
+// above): hand the model the material, don't command it toward depth.
+const NODE_READING_INSTRUCTIONS: Record<EntrySource, string> = {
+  text: ``,
+  lastfm: ``,
+  twitter: ``,
+};
 
-export function nodeReadingMessages(submission: TextSubmission): {
+export function nodeReadingMessages(
+  submission: TextSubmission,
+  source: EntrySource,
+): {
   system: string;
   user: string;
 } {
+  const instruction = NODE_READING_INSTRUCTIONS[source];
   const labelLine = submission.label.trim()
     ? `The person labelled this submission: "${submission.label.trim()}".\n\n`
     : "";
 
   return {
-    system: `${NODE_READING_INSTRUCTION}
+    system: `${instruction}
 
 Return a JSON object with exactly two fields:
 - "title": a short 2–5 word title for the analysis.

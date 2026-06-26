@@ -4,7 +4,7 @@ Project context for Claude Code. Read this first, then `BUILD_PLAN.md` and `CONS
 
 ## What this is
 
-Constello reads what a person carries *underneath* the things they gather — not the surface material. Every reading (Node, synthesis, pairwise) must reach for the fundamental thing the person carries, never describe the surface artifact.
+A person's collections are the trace of a world they're building. Constello reads that world — the organizing principle behind why *these* things and not others — never the surface artifact. Recognition is when two worlds realize they exist in the same place — "hey, ure the same as me." Readings stay neutral and let depth emerge; they are not commanded to reach for it.
 
 ## Where things live
 
@@ -15,7 +15,7 @@ Constello reads what a person carries *underneath* the things they gather — no
 - Visual prototypes: `ui/`
 
 ## Working norms
-
+- **Conceptual / design work (not coding):** read `obsidian vault/CORE.md` + `INDEX.md` *first* — they carry the working discipline (no tokens/slogans, preserve Ethan's words verbatim, idea-docs + connecting-docs not territories). Riff only after loading them.
 - **Plan before action.** Produce a written plan + decisions checklist before scaffolding code.
 - **Spec docs are editable.** The philosophy/build docs are Claude-authored — edit directly when warranted.
 - **Defer defensive infrastructure.** No PII filters, content moderation, or abuse prevention until the algorithm reads true. Don't build for problems before there's something made.

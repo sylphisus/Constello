@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
-import { fetchTwitter, formatTwitter } from "@/lib/collections/twitter";
 import { createEntry } from "@/lib/collections/entries";
+import { supabase } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
-// POST { constellationId?, handle } → fetch the X/Twitter profile + recent posts,
-// format into one entry (stored pending), return the constellation id. The fetch
-// source is not wired yet (see lib/collections/twitter.ts); until it is, this
-// returns a clean "not connected yet" error.
+// POST { constellationId?, handle } → queue an X / Twitter handle as a pending
+// entry. The deployed app does NOT scrape (see lib/collections/twitter.ts): the
+// post material is filled in later, off-platform, by the local bridge
+// (constello-x → /api/admin/ingest-twitter), which reconciles into THIS entry by
+// matching its label. Until then the handle sits in the pending queue as
+// "being read…", so a submission is never lost.
 export async function POST(req: Request) {
   let body: { constellationId?: string; handle?: string };
   try {
@@ -21,26 +23,30 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "An X / Twitter handle is required." }, { status: 400 });
   }
 
-  let entry: { label: string; rawText: string };
-  try {
-    entry = formatTwitter(await fetchTwitter(handle));
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "X / Twitter fetch failed.";
-    // "not connected yet" is an expected state until fetchTwitter is wired.
-    const notWired = msg.includes("isn't connected yet");
-    return NextResponse.json({ error: msg }, { status: notWired ? 501 : 502 });
-  }
-
+  // Label MUST match formatTwitter's `X · @<handle>` so the later bridge push
+  // reconciles into this entry instead of creating a duplicate.
   const result = await createEntry({
     constellationId: body.constellationId,
     source: "twitter",
-    label: entry.label,
-    rawText: entry.rawText,
+    label: `X · @${handle}`,
+    rawText: `Pending X / Twitter capture for @${handle}. Posts are added off-platform by the local bridge.`,
   });
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
+
+  // The handle doubles as a notification contact, but stays UNVERIFIED until it's
+  // confirmed to follow @constello (the follow gate in lib/notify). Notifications
+  // are a public @mention — the knock only, never the bearer link. Best-effort.
+  const db = supabase();
+  if (db) {
+    await db.from("contacts").upsert(
+      { constellation_id: result.constellationId, channel: "twitter", address: `@${handle}`, verified: false },
+      { onConflict: "constellation_id,channel,address" },
+    );
+  }
 
   return NextResponse.json({
     constellationId: result.constellationId,
     entryId: result.entryId,
+    pending: true,
   });
 }

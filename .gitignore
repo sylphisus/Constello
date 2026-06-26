@@ -18,3 +18,4 @@ dist/
 # Obsidian — keep notes + config, drop volatile UI state and trash
 obsidian vault/.obsidian/workspace.json
 obsidian vault/.trash/
+.vercel

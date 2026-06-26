@@ -4,7 +4,7 @@ Merged record of the two founding conversations (the original spark and the Apri
 
 > *"Their existence in essence is akin to mine, a kin to mine. They could lead any life, even if they were a fucking sherpa in the appalachians, it doesn't matter who we are down here — we would always still recognize each other."*
 
-This sherpa line is the phenomenological end of the project; what recognizing kin *underneath* the surface demands of the matching system is worked out in [[Constello — Architectural Deepening]].
+This sherpa line is the phenomenological end of the project.[^deepening]
 
 ## The spark
 
@@ -59,3 +59,5 @@ All treated the problem as *too much* and tried to solve it by imposing scarcity
 ## Name
 
 **Constellation** (working title), also called *Ascension* in early thinking.
+
+[^deepening]: [[Constello — Architectural Deepening]]
