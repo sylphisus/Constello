@@ -88,5 +88,8 @@ export async function GET() {
     pending,
     essenceQueue,
     pendingFollows,
+    // The console is already behind Basic auth; hand the password back so the
+    // copy-paste bridge command carries a real value, not a placeholder.
+    adminPassword: process.env.ADMIN_PASSWORD ?? null,
   });
 }

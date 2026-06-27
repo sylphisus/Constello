@@ -61,8 +61,11 @@ function xHandle(label: string): string | null {
 
 // The exact local command that scrapes the handle and fills THIS entry
 // (--constellation-id makes the bridge reconcile into it, not fork a new world).
-function bridgeCommand(handle: string, constellationId: string): string {
-  return `cd ${BRIDGE_DIR}\nCONSTELLO_ADMIN_PASSWORD=… uv run constello-x ${handle} --constellation-id ${constellationId}`;
+function bridgeCommand(handle: string, constellationId: string, password: string): string {
+  // Inline the real password (the console is authed) so the command runs as-is.
+  // Fall back to a clearly-not-a-value placeholder if the server didn't supply it.
+  const pw = password || "YOUR_ADMIN_PASSWORD";
+  return `cd ${BRIDGE_DIR}\nCONSTELLO_ADMIN_PASSWORD=${pw} uv run constello-x ${handle} --constellation-id ${constellationId}`;
 }
 
 // "3d" / "5h" / "just now" — how long ago an ISO timestamp was.
@@ -82,6 +85,7 @@ export default function Admin() {
   const [pending, setPending] = useState<PendingEntry[]>([]);
   const [essenceQueue, setEssenceQueue] = useState<EssenceItem[]>([]);
   const [pendingFollows, setPendingFollows] = useState<PendingFollow[]>([]);
+  const [adminPassword, setAdminPassword] = useState("");
   const [loading, setLoading] = useState(true);
   // True only until the first load settles. Refreshes after that keep the page
   // mounted (so e.g. the queue-confirmation block isn't unmounted mid-refresh).
@@ -100,6 +104,7 @@ export default function Admin() {
       setPending(data.pending ?? []);
       setEssenceQueue(data.essenceQueue ?? []);
       setPendingFollows(data.pendingFollows ?? []);
+      setAdminPassword(data.adminPassword ?? "");
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Failed to load.");
     } finally {
@@ -151,7 +156,7 @@ export default function Admin() {
           </Section>
 
           <Section title="Queue an X handle">
-            <XQueue onQueued={load} />
+            <XQueue onQueued={load} password={adminPassword} />
           </Section>
 
           <Section title="Pending readings" count={pending.length}>
@@ -165,7 +170,7 @@ export default function Admin() {
                   </span>
                 </div>
                 {g.entries.map((e) => (
-                  <PendingCard key={e.id} entry={e} onSaved={load} />
+                  <PendingCard key={e.id} entry={e} onSaved={load} password={adminPassword} />
                 ))}
               </div>
             ))}
@@ -236,7 +241,15 @@ function RosterRow({ item }: { item: RosterItem }) {
   );
 }
 
-function PendingCard({ entry, onSaved }: { entry: PendingEntry; onSaved: () => void }) {
+function PendingCard({
+  entry,
+  onSaved,
+  password,
+}: {
+  entry: PendingEntry;
+  onSaved: () => void;
+  password: string;
+}) {
   const [artifact, setArtifact] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -261,6 +274,26 @@ function PendingCard({ entry, onSaved }: { entry: PendingEntry; onSaved: () => v
     }
   }
 
+  async function remove() {
+    if (busy) return;
+    if (!confirm(`Delete this pending ${entry.source} entry? This can't be undone.`)) return;
+    setBusy(true);
+    setErr("");
+    try {
+      const res = await fetch("/api/admin/entry", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entryId: entry.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Delete failed.");
+      onSaved();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Delete failed.");
+      setBusy(false);
+    }
+  }
+
   // An X entry that's still just a queued handle has no posts to read yet — it's
   // filled off-platform by the bridge. Show the command to run; hide the reading
   // workflow until the posts arrive.
@@ -270,8 +303,13 @@ function PendingCard({ entry, onSaved }: { entry: PendingEntry; onSaved: () => v
 
   return (
     <section style={card}>
-      <div style={meta}>
-        {entry.source} · {entry.label || "(no label)"} · {ago(entry.created_at)} ago
+      <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+        <div style={meta}>
+          {entry.source} · {entry.label || "(no label)"} · {ago(entry.created_at)} ago
+        </div>
+        <button onClick={remove} disabled={busy} style={{ ...ghostBtn, marginLeft: "auto" }}>
+          Delete
+        </button>
       </div>
 
       {handle && (
@@ -281,7 +319,7 @@ function PendingCard({ entry, onSaved }: { entry: PendingEntry; onSaved: () => v
               ? "Fill from X — run locally, then Refresh:"
               : "Re-pull from X (run locally, then Refresh):"}
           </p>
-          <BridgeBlock command={bridgeCommand(handle, entry.constellation_id)} />
+          <BridgeBlock command={bridgeCommand(handle, entry.constellation_id, password)} />
         </div>
       )}
 
@@ -346,7 +384,7 @@ function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) 
 
 // Seed a new X reading from admin: queues the pending placeholder (same route the
 // public X tab uses) and immediately shows the bridge command to fill it.
-function XQueue({ onQueued }: { onQueued: () => void }) {
+function XQueue({ onQueued, password }: { onQueued: () => void; password: string }) {
   const [handle, setHandle] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -398,7 +436,7 @@ function XQueue({ onQueued }: { onQueued: () => void }) {
             Queued <strong>@{queued.handle}</strong> → <Cid id={queued.constellationId} />. Run
             locally to fill it, then Refresh:
           </p>
-          <BridgeBlock command={bridgeCommand(queued.handle, queued.constellationId)} />
+          <BridgeBlock command={bridgeCommand(queued.handle, queued.constellationId, password)} />
         </div>
       )}
     </section>
