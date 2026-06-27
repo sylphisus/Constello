@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "buildCommand": "rm -rf .quartz && npx quartz plugin install && npx quartz build",
+  "buildCommand": "rm -rf .quartz && npx quartz plugin install && node scripts/patch-graph.mjs && npx quartz build",
   "outputDirectory": "public",
   "cleanUrls": true,
   "trailingSlash": false
