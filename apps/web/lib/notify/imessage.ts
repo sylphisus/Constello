@@ -1,46 +1,42 @@
-// Outbound iMessage via Photon's spectrum-ts (managed iMessage line).
-// Best-effort and env-gated: without PHOTON_PROJECT_ID / PHOTON_PROJECT_SECRET
-// the send is skipped, like the other adapters. The opt-in (capturing a handle)
-// happens on the inbound side — app/api/inbound/imessage/route.ts.
+// Outbound iMessage via a self-hosted BlueBubbles server — a Mac signed into
+// iMessage, reachable from here through a tunnel (replaces the former Photon /
+// spectrum-ts path). Best-effort + env-gated: without BLUEBUBBLES_SERVER_URL /
+// BLUEBUBBLES_PASSWORD the send is skipped, like the other channels.
 //
-// The SDK is loaded dynamically and typed loosely on purpose: it's an external
-// dependency whose surface we don't want to couple the build to. The outbound
-// path is the documented one:
-//   const im = imessage(app); im.user(phone) → im.space.create(user) → space.send
-//   https://photon.codes/docs/spectrum-ts/spaces-and-users
+// We only ever send to a handle that texted us FIRST — the inbound webhook is the
+// sole creator of `imessage` contacts (app/api/inbound/imessage; the public
+// /api/contact no longer accepts the channel). So every send is a reply inside an
+// existing thread, never a cold blast — which is what keeps the Apple ID off the
+// spam heuristics.
+//   https://docs.bluebubbles.app/server/developer-guides/rest-api-and-webhooks
 
-let appPromise: Promise<unknown> | null = null;
+import { randomUUID } from "node:crypto";
 
-async function getApp(): Promise<unknown | null> {
-  const projectId = process.env.PHOTON_PROJECT_ID;
-  const projectSecret = process.env.PHOTON_PROJECT_SECRET;
-  if (!projectId || !projectSecret) return null;
-
-  if (!appPromise) {
-    appPromise = (async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { Spectrum } = (await import("spectrum-ts")) as any;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { imessage } = (await import("spectrum-ts/providers/imessage")) as any;
-      return Spectrum({ projectId, projectSecret, providers: [imessage.config()] });
-    })();
+export async function sendImessage(toHandle: string, text: string): Promise<boolean> {
+  const server = process.env.BLUEBUBBLES_SERVER_URL;
+  const password = process.env.BLUEBUBBLES_PASSWORD;
+  if (!server || !password) {
+    console.warn("[notify/imessage] BLUEBUBBLES_SERVER_URL / _PASSWORD not set — skipped.");
+    return false;
   }
-  return appPromise;
-}
 
-export async function sendImessage(toPhone: string, text: string): Promise<boolean> {
+  const url = `${server.replace(/\/$/, "")}/api/v1/message/text?password=${encodeURIComponent(password)}`;
   try {
-    const app = await getApp();
-    if (!app) {
-      console.warn("[notify/imessage] PHOTON_PROJECT_ID / SECRET not set — skipped.");
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      // `any;-;<addr>` lets the server resolve the existing iMessage/SMS chat for
+      // the handle (reply-in-thread). tempGuid is a client-side dedup id.
+      body: JSON.stringify({
+        chatGuid: `any;-;${toHandle}`,
+        tempGuid: `temp-${randomUUID()}`,
+        message: text,
+      }),
+    });
+    if (!res.ok) {
+      console.error(`[notify/imessage] BlueBubbles ${res.status}: ${await res.text()}`);
       return false;
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { imessage } = (await import("spectrum-ts/providers/imessage")) as any;
-    const im = imessage(app);
-    const user = await im.user(toPhone);
-    const space = await im.space.create(user);
-    await space.send(text);
     return true;
   } catch (err) {
     console.error("[notify/imessage] send failed:", err);

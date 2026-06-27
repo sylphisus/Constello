@@ -46,7 +46,7 @@ These unblock milestones 2.1–2.4.
 
 - [ ] **Model access verified** on your Anthropic account:
   - opus for everything.
-- [ ] **Spending limit** decided. Phase 2 + 3 on Ethan's own collection is plausibly under $5; full first-cohort rollout (Phase 4) at ~15 users with side-by-side experiments could land in the $50–200 range. Set a guardrail.
+- [ ] **Spending limit** decided. Phase 2 + 3 on Ethan's own collection is plausibly under $5; full first-cohort rollout (Phase 4) at ~100 users with side-by-side experiments could land in the ~$300–1,300 range (scales roughly linearly with cohort size). Set a guardrail.
 
 ### Pinterest
 
@@ -86,12 +86,13 @@ Remaining to pull real boards:
 
 ### Notifications ("your reading is ready")
 
-Built 2026-06-26 (branch `alpha-manual-readings`). Three channels, all best-effort + env-gated (a missing key skips that channel, never breaks a save), fired from the admin reading/essence save. Private channels carry the constellation link (a bearer URL); a public mention never can. Schema: `contacts` + `notifications` tables in `migration.alpha.sql` (**re-run the migration**). Opt-in: email from the constellation page (`NotifyMe`), X handle auto-captured from the X tab, iMessage via the inbound "text us first" webhook.
+Built 2026-06-26 (branch `alpha-manual-readings`). Four channels, all best-effort + env-gated (a missing key skips that channel, never breaks a save), fired from the admin reading/essence save. Private channels (email, iMessage) carry the constellation link (a bearer URL); public channels (X, Discord) never can. Schema: `contacts` + `notifications` tables in `migration.alpha.sql` (**re-run the migration** — the `contacts.channel` check now includes `'discord'`). Opt-in: email + X handle + Discord username from the constellation page (`NotifyMe`); iMessage via the inbound "text us first" webhook only.
 
-- [ ] `**APP_URL`** — base for notification links (defaults to `https://constello.xyz` if unset). Set in Vercel.
-- [ ] **Email — Resend**: create a [Resend](https://resend.com) account, verify a sending domain, then set `**RESEND_API_KEY`** + `**RESEND_FROM**` (e.g. `Constello <readings@constello.xyz>`). Free tier ~3k/mo. This is the one channel that needs no device-side setup and reaches every iPhone.
-- [ ] **iMessage — Photon** (`spectrum-ts`, installed): create a [Photon](https://photon.codes) project + a managed iMessage line, then set `**PHOTON_PROJECT_ID`**, `**PHOTON_PROJECT_SECRET**` (outbound) and `**PHOTON_WEBHOOK_SECRET**` (inbound HMAC). Register the webhook at `POST /api/inbound/imessage`. Also set `**IMESSAGE_NUMBER**` (the line's number in E.164, e.g. `+15551234567`) — the constellation page's "Text us" button deep-links to it (`sms:` with the constellation tag prefilled); the iMessage opt-in only appears when it's set. ⚠️ Confirm the real webhook header + payload field names against a live Spectrum request — the handler reads them defensively but they're unverified. ⚠️ Managed iMessage is grey-area (Macs running Messages); reliability/ToS is a bet. Heavy dep (147 pkgs), loaded only via dynamic import when the keys are set.
+- [ ] `**APP_URL`** — base for notification links (defaults to `https://constello.xyz` if unset). Set in Vercel. Use the **www** form (`https://www.constello.xyz`) since the apex 308s to www.
+- [ ] **Email — Resend**: create a [Resend](https://resend.com) account, verify a sending domain, then set `**RESEND_API_KEY`** + `**RESEND_FROM**` (e.g. `Constello <readings@constello.xyz>`). Free tier ~3k/mo. This is the channel that needs no device-side setup, reaches every iPhone, and scales to the full cohort with zero per-user work — the load-bearing channel.
+- [ ] **iMessage — self-hosted BlueBubbles** (replaced Photon 2026-06-26; `spectrum-ts` removed): run [BlueBubbles](https://bluebubbles.app) on an always-on Mac signed into iMessage, exposed via a `cloudflared` tunnel. Set `**BLUEBUBBLES_SERVER_URL`**, `**BLUEBUBBLES_PASSWORD**` (outbound REST), and a `**BLUEBUBBLES_WEBHOOK_SECRET**` you choose. Register the BlueBubbles webhook (new-message events) at `POST /api/inbound/imessage?secret=<BLUEBUBBLES_WEBHOOK_SECRET>` (the query secret is how we auth it — BlueBubbles doesn't sign webhooks). Set `**IMESSAGE_NUMBER**` (the Mac's iMessage number in E.164) — the page's "Text us" button deep-links to it (`sms:` with the constellation tag prefilled); the iMessage tab only appears when it's set. **Reply-only by design**: an iMessage contact is created *only* by the inbound webhook (the public `/api/contact` no longer accepts the channel), so every send is a reply in an existing thread, never a cold blast → keeps the Apple ID off the spam heuristics. ⚠️ Confirm the live BlueBubbles new-message payload fields (`data.text`, `data.handle.address`, `data.isFromMe`) against a real event — coded to the documented shape but unverified. ⚠️ Automating a personal iMessage account is grey-area (Apple ToS); reply-only lowers flagging risk but the always-on Mac + tunnel is on you to keep up.
 - [ ] **X / Twitter — public mention, follow-gated**: set `**X_USER_TOKEN`** (OAuth2 user-context token with `tweet.write` + `users.read`). The notification is a public `@handle` mention from @03constello — the **knock only, never the bearer link** (a public tweet is visible to all; follow-gating doesn't change that). Only fires once the handle is **verified** as a follower of @03constello (the `verified` flag on the contact). Verifying is **manual for the alpha** — the X follows-lookup is gated on low API tiers; flip `verified` by hand (or wire an automated check if the tier supports it). ⚠️ Reintroduces an X credential in prod, which the project otherwise keeps off-platform (the bridge above) — a deliberate reversal to weigh.
+- [ ] **Discord — public @mention in a mutual server**: create a Discord application + bot, enable the **Server Members** privileged intent, and invite the bot to the mutual server with **Send Messages**. Set `**DISCORD_BOT_TOKEN`**, `**DISCORD_GUILD_ID**` (the mutual server), `**DISCORD_CHANNEL_ID**` (where pings post). Opt-in: the person types their Discord username on the constellation page; `/api/contact` resolves it to a snowflake id via the guild member search (we store the **id**, not the username) and marks the contact `verified` iff they're a member — **server membership is the consent gate** (mirrors the X follow-gate). The notification is a public `<@id>` mention — the **knock only, never the link** (a channel is visible to its members). REST-only, no gateway, runs on Vercel functions. The Discord tab only appears when all three env vars are set.
 
 ---
 
@@ -121,7 +122,7 @@ Per Ethan: "I'll have to come up with some really solid guiding examples for you
 
 ### People
 
-- [ ] **First cohort of 5–15 testers** identified. They need to be people whose constellations would actually be interesting to read — friends with rich Pinterest/Last.fm/memory/sticker presences. The cohort is the bootstrap; this is the cold-start solve, so picking it carefully matters.
+- [ ] **First cohort of ~100 testers** identified. They need to be people whose constellations would actually be interesting to read — friends with rich Pinterest/Last.fm/memory/sticker presences. The cohort is the bootstrap; this is the cold-start solve, so picking it carefully matters.
 - [ ] **Tester onboarding plan**: how do you invite them? Email, DM, Telegram. Each tester needs to know they're testing, that there's no public visibility yet, and that the visibility model (matches see raw material) applies between them.
 - [ ] **Their data**: testers will run their own onboarding, but they need access to their own Pinterest / Last.fm / Claude memory / Telegram stickers. Some may not use all four. Minimum-one-collection per spec; partial constellations are fine.
 
@@ -161,6 +162,6 @@ If you want to paste a procurement list into a notes app and run it down:
 
 **Decisions before adapters**: Anthropic spend cap, Pinterest scope, Last.fm clustering (D5), Pinterest sampling (D6), Claude memory format (D7), Telegram export format (D8).
 
-**Data from you**: Ethan's Pinterest account, Last.fm username, Claude memory export, Telegram sticker export. Eventually: 5–15 invited testers and their data.
+**Data from you**: Ethan's Pinterest account, Last.fm username, Claude memory export, Telegram sticker export. Eventually: ~100 invited testers and their data.
 
 **Before public**: privacy policy, terms, density judgment call, visitor pairwise behavior (D11), CTA copy.

@@ -92,7 +92,7 @@ Order: Last.fm → Pinterest → Claude memory → Stickers → General text. La
 | 4.2 | `/me`: three layers (nodes graph, per-collection drawer with visibility toggle + disconnect, synthesis prose). | Ethan views his own constellation. Tapping any node opens its full reading. Toggling visibility persists. |
 | 4.3 | `/sky` (authed): ANN candidates + pairwise ranking. Few results per visit. No infinite scroll. | Sky surfaces 3 candidates for Ethan from the testers' cohort once it exists. None are shown by popularity. |
 | 4.4 | `/constellation/[chosenName]`: side-by-side rendering, red strings from pairwise threads, walkthrough panel, hover-thread-highlights-string interaction. Match-gated raw-material access (per §10) — Node readings always visible; raw material only if mutually surfaced AND collection is marked visible. | Two test users view each other. Walkthrough renders. Red strings highlight on hover. Match-vs-non-match raw-material gating verified. |
-| 4.5 | Invite 5–15 testers. Each runs the real onboarding flow against their own data. | Real cohort exists. `/sky` returns real candidates. No seeded constellations in DB. |
+| 4.5 | Invite ~100 testers. Each runs the real onboarding flow against their own data. | Real cohort exists. `/sky` returns real candidates. No seeded constellations in DB. |
 | 4.6 | `/` (public Explore) **stays gated**. Holding page or redirect to onboarding. | Visiting `/` while not signed in does not show the Sky. |
 
 **Phase 4 exit criterion:** the prototype works for a real cohort of real people. Ethan plus a small invited group can encounter each other's actual constellations.

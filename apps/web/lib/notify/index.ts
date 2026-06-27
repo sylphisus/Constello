@@ -2,22 +2,23 @@ import { supabase } from "@/lib/supabase";
 import { sendEmail } from "./email";
 import { sendImessage } from "./imessage";
 import { sendMention } from "./twitter";
+import { sendDiscordPing } from "./discord";
 
 // Notify a constellation's contacts that a reading (or its essence) has landed.
 // Best-effort and idempotent: each (contact, kind, ref) is sent at most once
 // (logged in `notifications`); a missing channel config or a send failure never
 // blocks the other channels or the caller.
 //
-// Private channels (email, imessage, twitter DM) carry the constellation link —
-// an unguessable bearer URL. We never put that link on a public surface; a
-// public mention could only ever be the knock, never the link (see the design
-// note in lib/notify/twitter.ts).
+// Private channels (email, imessage) carry the constellation link — an
+// unguessable bearer URL. Public channels (twitter @mention, discord @mention in
+// a mutual server) are visible to others, so they can only ever carry the knock,
+// never the link (see the design notes in lib/notify/twitter.ts + discord.ts).
 
 export type NotifyKind = "reading" | "essence";
 
 interface Contact {
   id: string;
-  channel: "email" | "imessage" | "twitter";
+  channel: "email" | "imessage" | "twitter" | "discord";
   address: string;
   verified: boolean;
 }
@@ -60,7 +61,9 @@ export async function notifyReadingReady(args: {
   for (const c of contacts as Contact[]) {
     // Never notify an unverified contact. Email opt-in and the iMessage inbound
     // capture set verified=true at the point of consent; a twitter handle stays
-    // unverified until it's confirmed to follow @03constello (the follow gate).
+    // unverified until it's confirmed to follow @03constello (the follow gate); a
+    // discord handle is verified at opt-in iff it resolved to a member of the
+    // mutual server (membership is the gate).
     if (!c.verified) continue;
 
     // Skip anything already sent for this exact (contact, kind, ref).
@@ -80,6 +83,8 @@ export async function notifyReadingReady(args: {
         ok = await sendImessage(c.address, message(args.kind, link));
       else if (c.channel === "twitter")
         ok = await sendMention(c.address, knock(args.kind)); // linkless — public
+      else if (c.channel === "discord")
+        ok = await sendDiscordPing(c.address, knock(args.kind)); // linkless — public
     } catch (err) {
       console.error(`[notify] ${c.channel} send threw:`, err);
     }

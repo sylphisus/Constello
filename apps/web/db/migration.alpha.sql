@@ -94,13 +94,19 @@ create table if not exists essences (
 create table if not exists contacts (
   id                uuid primary key default gen_random_uuid(),
   constellation_id  uuid not null references constellations(id) on delete cascade,
-  channel           text not null check (channel in ('email', 'imessage', 'twitter')),
+  channel           text not null check (channel in ('email', 'imessage', 'twitter', 'discord')),
   address           text not null,
   verified          boolean not null default false,
   created_at        timestamptz not null default now(),
   unique (constellation_id, channel, address)
 );
 create index if not exists contacts_constellation_idx on contacts(constellation_id);
+-- `create table if not exists` won't widen the check on an already-created table,
+-- so re-assert it explicitly to add 'discord' (a public @mention channel) for DBs
+-- that predate it.
+alter table contacts drop constraint if exists contacts_channel_check;
+alter table contacts add constraint contacts_channel_check
+  check (channel in ('email', 'imessage', 'twitter', 'discord'));
 
 -- One row per notification actually sent → idempotency. `ref` is the entry_id
 -- for a reading or the constellation_id for an essence; the unique constraint is

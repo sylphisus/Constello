@@ -16,8 +16,7 @@
     "marked": "^18.0.5",
     "next": "^15.5.19",
     "react": "19.0.0",
-    "react-dom": "19.0.0",
-    "spectrum-ts": "^8.0.0"
+    "react-dom": "19.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

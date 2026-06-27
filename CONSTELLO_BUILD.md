@@ -616,7 +616,7 @@ For the prototype, ship a single default presentation. But don't bake any presen
 - Onboarding flow wired end-to-end (`/onboarding/*`)
 - New user's collections are ingested, synthesis compiled, pairwise reads with other real users computed on-demand
 - Ethan runs the flow first against his own collections; iterate on synthesis prompt quality until the portrait reads true
-- Invite a small first cohort (5–15 people) to onboard and produce their constellations
+- Invite a first cohort (~100 people) to onboard and produce their constellations
 - `/me`, `/sky` (authed), and `/constellation/[chosenName]` work for this cohort
 - `/` (public Explore) remains gated — redirects to onboarding or shows a holding page
 

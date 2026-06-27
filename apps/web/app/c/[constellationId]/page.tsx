@@ -90,7 +90,15 @@ export default async function ConstellationPage({
 
       <AddEntry constellationId={constellationId} />
 
-      <NotifyMe constellationId={constellationId} imessageNumber={process.env.IMESSAGE_NUMBER} />
+      <NotifyMe
+        constellationId={constellationId}
+        imessageNumber={process.env.IMESSAGE_NUMBER}
+        discordEnabled={Boolean(
+          process.env.DISCORD_BOT_TOKEN &&
+            process.env.DISCORD_GUILD_ID &&
+            process.env.DISCORD_CHANNEL_ID,
+        )}
+      />
 
       <p className="persist-flag">
         {fulfilled} read · {pending} pending · this link is your constellation —

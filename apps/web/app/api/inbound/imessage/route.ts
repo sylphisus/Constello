@@ -1,56 +1,55 @@
 import { NextResponse } from "next/server";
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { timingSafeEqual } from "node:crypto";
 import { supabase } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
-// Photon (spectrum-ts) inbound webhook — the "text us first" opt-in. A person
-// texts our managed iMessage line with their constellation id; we capture their
-// handle as a verified `imessage` contact for that constellation. Inbound-first
-// means the text itself is the consent — they never hand us their number.
+// BlueBubbles inbound webhook — the "text us first" opt-in. The Mac running
+// BlueBubbles POSTs every iMessage event here; we act only on inbound new-message
+// events whose text carries a constellation uuid, capturing the sender's handle
+// as a verified `imessage` contact for that constellation. The text itself is the
+// consent — and this is the ONLY way an imessage contact is created (the public
+// /api/contact no longer accepts the channel), so we can only ever reply to
+// someone who messaged us first.
 //
 // Public route ON PURPOSE: it lives outside /api/admin so the Basic-auth
-// middleware doesn't gate it. It's authenticated instead by the Spectrum HMAC
-// signature: HMAC-SHA256 over `v0:<timestamp>:<rawBody>`, 5-minute replay window,
-// computed over the exact bytes on the wire.
-//   https://photon.codes/docs/spectrum-ts/webhooks
-//
-// NOTE: the signature header names and the inbound JSON field names below are
-// read defensively — confirm them against a real Spectrum payload before relying
-// on this in production.
+// middleware doesn't gate it. BlueBubbles doesn't sign its webhooks, so we
+// authenticate with a shared secret in the query string — register the webhook
+// URL as  https://.../api/inbound/imessage?secret=<BLUEBUBBLES_WEBHOOK_SECRET>
+//   https://docs.bluebubbles.app/server/developer-guides/rest-api-and-webhooks
 
-function verify(raw: string, sig: string | null, ts: string | null): boolean {
-  const secret = process.env.PHOTON_WEBHOOK_SECRET;
-  if (!secret || !sig || !ts) return false;
-  if (Math.abs(Date.now() / 1000 - Number(ts)) > 300) return false; // replay window
-  const expected = createHmac("sha256", secret).update(`v0:${ts}:${raw}`).digest("hex");
-  const a = Buffer.from(expected);
-  const b = Buffer.from(sig);
+function authed(req: Request): boolean {
+  const secret = process.env.BLUEBUBBLES_WEBHOOK_SECRET;
+  const given = new URL(req.url).searchParams.get("secret");
+  if (!secret || !given) return false;
+  const a = Buffer.from(secret);
+  const b = Buffer.from(given);
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 
 export async function POST(req: Request) {
-  const raw = await req.text();
-  if (!verify(raw, req.headers.get("x-spectrum-signature"), req.headers.get("x-spectrum-timestamp"))) {
-    return new NextResponse("bad signature", { status: 401 });
-  }
+  if (!authed(req)) return new NextResponse("bad secret", { status: 401 });
 
-  let body: Record<string, unknown>;
+  let body: { type?: string; data?: Record<string, unknown> };
   try {
-    body = JSON.parse(raw);
+    body = JSON.parse(await req.text());
   } catch {
     return new NextResponse("bad json", { status: 400 });
   }
 
-  // Normalized inbound shape: sender handle + text content. Read defensively.
-  const msg = (body.message ?? body) as Record<string, unknown>;
-  const sender = (msg.sender ?? msg.from) as string | undefined;
-  const content = (msg.content ?? {}) as Record<string, unknown>;
-  const text = (content.text ?? msg.text) as string | undefined;
+  // Only inbound new messages — ignore our own sends and other event types.
+  const data = (body.data ?? {}) as Record<string, unknown>;
+  if (body.type !== "new-message" || data.isFromMe === true) {
+    return NextResponse.json({ ok: true });
+  }
 
+  const handle = (data.handle ?? {}) as Record<string, unknown>;
+  const sender = handle.address as string | undefined;
+  const text = data.text as string | undefined;
   const constellationId = text?.match(UUID)?.[0];
+
   const db = supabase();
   // Ack regardless — a non-matching text is just someone saying hi.
   if (!sender || !constellationId || !db) return NextResponse.json({ ok: true });

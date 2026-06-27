@@ -12,14 +12,19 @@ import { X_HANDLE } from "@/lib/brand";
 //                 a line is configured.
 //   • x         — type your handle (captured here, unverified) then follow
 //                 @03constello so we can publicly @mention you — never the link.
-type Channel = "email" | "imessage" | "twitter";
+//   • discord   — type your username; we resolve it to a member of the mutual
+//                 server and @ping you there when your reading lands (public
+//                 knock, never the link). Shown only when the bot is configured.
+type Channel = "email" | "imessage" | "twitter" | "discord";
 
 export default function NotifyMe({
   constellationId,
   imessageNumber,
+  discordEnabled,
 }: {
   constellationId: string;
   imessageNumber?: string;
+  discordEnabled?: boolean;
 }) {
   const [channel, setChannel] = useState<Channel>("email");
 
@@ -27,6 +32,7 @@ export default function NotifyMe({
     { key: "email", label: "Email" },
     ...(imessageNumber ? [{ key: "imessage" as Channel, label: "iMessage" }] : []),
     { key: "twitter", label: "X" },
+    ...(discordEnabled ? [{ key: "discord" as Channel, label: "Discord" }] : []),
   ];
 
   return (
@@ -50,6 +56,7 @@ export default function NotifyMe({
         <ImessageOptIn constellationId={constellationId} number={imessageNumber} />
       )}
       {channel === "twitter" && <TwitterOptIn constellationId={constellationId} />}
+      {channel === "discord" && <DiscordOptIn constellationId={constellationId} />}
     </div>
   );
 }
@@ -176,6 +183,68 @@ function TwitterOptIn({ constellationId }: { constellationId: string }) {
       >
         {state === "busy" ? "…" : "Notify me on X"}
       </button>
+      {state === "error" && <p className="error">Could not save — try again.</p>}
+    </>
+  );
+}
+
+// Type a Discord username; the server resolves it to a member of the mutual
+// server. `verified` in the response is false when the username isn't found in
+// the server (or the bot isn't configured) — then they need to join first.
+function DiscordOptIn({ constellationId }: { constellationId: string }) {
+  const [handle, setHandle] = useState("");
+  const [state, setState] = useState<"idle" | "busy" | "done" | "notfound" | "error">("idle");
+
+  async function save() {
+    const address = handle.trim().replace(/^@/, "");
+    if (!address || state === "busy") return;
+    setState("busy");
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ constellationId, channel: "discord", address }),
+      });
+      if (!res.ok) throw new Error();
+      const { verified } = (await res.json()) as { verified?: boolean };
+      setState(verified ? "done" : "notfound");
+    } catch {
+      setState("error");
+    }
+  }
+
+  if (state === "done") {
+    return (
+      <p className="notify-done">
+        Found you. We&apos;ll @ping you in the server when your reading lands (the
+        knock — never the link).
+      </p>
+    );
+  }
+
+  return (
+    <>
+      <input
+        className="handle-input"
+        type="text"
+        placeholder="your Discord username"
+        value={handle}
+        onChange={(e) => setHandle(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && save()}
+      />
+      <button
+        className="ghost-btn"
+        disabled={!handle.trim() || state === "busy"}
+        onClick={save}
+      >
+        {state === "busy" ? "…" : "Notify me on Discord"}
+      </button>
+      {state === "notfound" && (
+        <p className="note">
+          Couldn&apos;t find that username in the server — join it first, then try
+          again.
+        </p>
+      )}
       {state === "error" && <p className="error">Could not save — try again.</p>}
     </>
   );
