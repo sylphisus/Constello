@@ -4,8 +4,9 @@ import { supabase } from "@/lib/supabase";
 export const runtime = "nodejs";
 
 // POST { contactId, verified } → flip a contact's `verified` flag. Used by the
-// admin to confirm a twitter handle follows @03constello before any public mention
-// goes out (the follow gate in lib/notify). Gated by Basic auth (middleware).
+// admin to mark a twitter handle done — i.e. the follow was checked and the
+// knock was posted by hand from @03constello (verified=true drops it off the
+// "X handles to notify" list). Gated by Basic auth (middleware).
 export async function POST(req: Request) {
   let body: { contactId?: string; verified?: boolean };
   try {

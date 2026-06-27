@@ -1,7 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { sendEmail } from "./email";
 import { sendImessage } from "./imessage";
-import { sendMention } from "./twitter";
 import { sendDiscordPing } from "./discord";
 
 // Notify a constellation's contacts that a reading (or its essence) has landed.
@@ -10,9 +9,13 @@ import { sendDiscordPing } from "./discord";
 // blocks the other channels or the caller.
 //
 // Private channels (email, imessage) carry the constellation link — an
-// unguessable bearer URL. Public channels (twitter @mention, discord @mention in
-// a mutual server) are visible to others, so they can only ever carry the knock,
-// never the link (see the design notes in lib/notify/twitter.ts + discord.ts).
+// unguessable bearer URL. Discord is a public @mention in a mutual server, so it
+// carries the knock only, never the link (see lib/notify/discord.ts).
+//
+// The X / twitter channel is NOT auto-sent here: it's handled MANUALLY in the
+// admin console (no API token, no cost). Handles are still captured as twitter
+// contacts; the admin surfaces each with a follow-check link and a ready-to-paste
+// knock that Ethan posts from @03constello by hand.
 
 export type NotifyKind = "reading" | "essence";
 
@@ -60,10 +63,9 @@ export async function notifyReadingReady(args: {
 
   for (const c of contacts as Contact[]) {
     // Never notify an unverified contact. Email opt-in and the iMessage inbound
-    // capture set verified=true at the point of consent; a twitter handle stays
-    // unverified until it's confirmed to follow @03constello (the follow gate); a
-    // discord handle is verified at opt-in iff it resolved to a member of the
-    // mutual server (membership is the gate).
+    // capture set verified=true at the point of consent; a discord handle is
+    // verified at opt-in iff it resolved to a member of the mutual server
+    // (membership is the gate). (twitter never auto-sends — see the note above.)
     if (!c.verified) continue;
 
     // Skip anything already sent for this exact (contact, kind, ref).
@@ -81,8 +83,7 @@ export async function notifyReadingReady(args: {
       if (c.channel === "email") ok = await sendEmail(c.address, args.kind, link);
       else if (c.channel === "imessage")
         ok = await sendImessage(c.address, message(args.kind, link));
-      else if (c.channel === "twitter")
-        ok = await sendMention(c.address, knock(args.kind)); // linkless — public
+      // twitter: intentionally no branch — mentioned by hand from the admin console.
       else if (c.channel === "discord")
         ok = await sendDiscordPing(c.address, knock(args.kind)); // linkless — public
     } catch (err) {

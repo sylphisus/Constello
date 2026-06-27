@@ -176,9 +176,9 @@ export default function Admin() {
             ))}
           </Section>
 
-          <Section title="Follow verification" count={pendingFollows.length}>
+          <Section title="X handles to notify" count={pendingFollows.length}>
             {pendingFollows.length === 0 && (
-              <Empty>No X handles awaiting a follow-check.</Empty>
+              <Empty>No X handles to post.</Empty>
             )}
             {pendingFollows.map((f) => (
               <FollowCard key={f.contactId} item={f} onSaved={load} />
@@ -487,11 +487,17 @@ function EssenceCard({ item, onSaved }: { item: EssenceItem; onSaved: () => void
   );
 }
 
+// Manual X notification. No API, no token: surface the handle with a link to
+// check the follow + a uniform, paste-ready knock to post from @03constello by
+// hand. "Mark posted" flips verified=true so it drops off the list.
 function FollowCard({ item, onSaved }: { item: PendingFollow; onSaved: () => void }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const handle = item.handle.replace(/^@/, "");
+  // The uniform knock — public, linkless (a post is visible to everyone).
+  const postLine = `@${handle} your constellation has been read.`;
 
-  async function verify() {
+  async function markPosted() {
     if (busy) return;
     setBusy(true);
     setErr("");
@@ -513,23 +519,43 @@ function FollowCard({ item, onSaved }: { item: PendingFollow; onSaved: () => voi
   return (
     <section style={card}>
       <div style={meta}>
-        <Cid id={item.constellationId} /> · {item.handle} · {ago(item.createdAt)} ago
+        <Cid id={item.constellationId} /> · @{handle} · {ago(item.createdAt)} ago
       </div>
       <p style={hint}>
-        Confirm {item.handle} follows @{X_HANDLE}, then verify — only then does a
-        public mention go out.
+        Check @{handle} follows @{X_HANDLE}, post the line below from @{X_HANDLE},
+        then mark it posted. (Public mention — the knock only, never the link.)
       </p>
-      <a
-        href={`https://x.com/${item.handle.replace(/^@/, "")}`}
-        target="_blank"
-        rel="noreferrer"
-        style={{ ...ghostBtn, display: "inline-block", textDecoration: "none", marginRight: 8 }}
-      >
-        Open {item.handle} ↗
-      </a>
-      <button onClick={verify} disabled={busy} style={btn}>
-        {busy ? "…" : `Verify — follows @${X_HANDLE}`}
-      </button>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "8px 0 4px" }}>
+        <a
+          href={`https://x.com/${handle}`}
+          target="_blank"
+          rel="noreferrer"
+          style={{ ...ghostBtn, display: "inline-block", textDecoration: "none" }}
+        >
+          Open @{handle} ↗
+        </a>
+        <a
+          href={`https://x.com/${X_HANDLE}`}
+          target="_blank"
+          rel="noreferrer"
+          style={{ ...ghostBtn, display: "inline-block", textDecoration: "none" }}
+        >
+          Open @{X_HANDLE} ↗
+        </a>
+      </div>
+      <p style={hint}>Paste this into a post from @{X_HANDLE}:</p>
+      <textarea
+        readOnly
+        value={postLine}
+        style={{ ...ta, height: 52 }}
+        onFocus={(e) => e.currentTarget.select()}
+      />
+      <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+        <CopyButton text={postLine} label="Copy post" />
+        <button onClick={markPosted} disabled={busy} style={btn}>
+          {busy ? "…" : "Mark posted"}
+        </button>
+      </div>
       {err && <p style={{ color: "var(--red)" }}>{err}</p>}
     </section>
   );
