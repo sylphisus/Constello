@@ -35,6 +35,7 @@ export default function RootLayout({
             Repo
           </a>
           <a href="https://docs.constello.xyz">Docs</a>
+          <a href="/sky">Sky</a>
         </nav>
         {children}
       </body>

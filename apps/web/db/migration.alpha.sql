@@ -12,21 +12,27 @@ create extension if not exists "pgcrypto";
 create extension if not exists "vector";
 
 -- One per person/world. signature is null until the first reading is embedded.
+-- A signature is unique among *live* constellations (the partial index below).
+-- There's no permanent history: a coordinate a constellation moves off of frees
+-- up, so the finite sky can't fill. That same unique index makes assignment
+-- race-safe — two simultaneous claimants can't both win; the loser is rejected
+-- and retries. A superseded coordinate URL simply stops resolving; the person
+-- re-finds their constellation via the map or by re-entering one of their
+-- collections.
 create table if not exists constellations (
   id          uuid primary key default gen_random_uuid(),
   signature   text,
   created_at  timestamptz not null default now()
 );
+create unique index if not exists constellations_signature_uniq
+  on constellations (signature) where signature is not null;
+-- A constellation is private and claimed by a password (no usernames). Null until
+-- someone first reaches it and sets one. See lib/auth.
+alter table constellations add column if not exists password_hash text;
 
--- Every signature a constellation has ever had → the constellation, so an old
--- link never 404s: it forwards to the constellation's current shape.
-create table if not exists signature_history (
-  signature        text primary key,
-  constellation_id uuid not null references constellations(id) on delete cascade,
-  created_at       timestamptz not null default now()
-);
-create index if not exists signature_history_constellation_idx
-  on signature_history(constellation_id);
+-- Removed: signature_history (the old permanent forward table). Dropped here for
+-- DBs that predate this change.
+drop table if exists signature_history cascade;
 
 -- One collection the person submitted. The act of including it is the signal.
 -- "pending" = an entry with no reading row yet (Ethan fulfills by hand).

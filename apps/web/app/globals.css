@@ -8,6 +8,7 @@
   --ink-soft: #b8ad97;
   --ink-faint: #7d7563;
   --red: #e8584d;
+  --gold: #f1c47a;
   --hair: rgba(239, 231, 214, 0.11);
   --hair-strong: rgba(239, 231, 214, 0.16);
   --essence: #e2dac9;
@@ -79,6 +80,113 @@ body {
   text-transform: uppercase;
   color: var(--ink-faint);
   margin-top: 7px;
+}
+
+/* the sky (constellation map) */
+.sky-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  margin-top: 18px;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  background:
+    radial-gradient(900px 520px at 50% -10%, #141826 0%, #0b0e16 60%);
+}
+.star {
+  fill: var(--ink);
+  opacity: 0.78;
+  transition: opacity 0.15s;
+}
+.star:hover {
+  opacity: 1;
+}
+.star-mine {
+  fill: #ffffff;
+  opacity: 1;
+}
+.star-near,
+.star-exact {
+  fill: var(--gold);
+  opacity: 1;
+}
+.pulse {
+  fill: none;
+  stroke: var(--gold);
+}
+.pulse-near {
+  stroke-opacity: 0.3;
+  stroke-width: 1;
+}
+.pulse-exact {
+  stroke-opacity: 0.65;
+  stroke-width: 1.5;
+}
+.sky-info {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  min-height: 1.4em;
+}
+.sky-self {
+  margin-top: 6px;
+  font-size: 12px;
+}
+.match-summary {
+  margin-top: 14px;
+  font-size: 13px;
+}
+
+/* password gate: remember-me toggle */
+.remember-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+  font-size: 13px;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+/* coordinate overlap: gold suffix + hover card linking the twin world */
+.coord-overlap {
+  position: relative;
+}
+.coord-suffix {
+  color: var(--gold);
+  cursor: help;
+  border-bottom: 1px dotted var(--gold);
+}
+.coord-pop {
+  position: absolute;
+  left: 0;
+  top: 170%;
+  z-index: 10;
+  display: none;
+  width: 250px;
+  padding: 11px 13px;
+  background: var(--bg-soft);
+  border: 1px solid var(--hair-strong);
+  border-radius: 9px;
+  text-transform: none;
+  letter-spacing: normal;
+  line-height: 1.5;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+.coord-overlap:hover .coord-pop {
+  display: block;
+}
+.coord-pop a {
+  color: var(--gold);
+  border-bottom: 1px solid transparent;
+}
+.coord-pop a:hover {
+  border-bottom-color: var(--gold);
+}
+.coord-pop a + a {
+  margin-left: 10px;
 }
 
 /* ── framing copy ──────────────────────────────────────────────────────── */
