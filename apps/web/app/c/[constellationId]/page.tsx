@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { buildReadingDoc } from "@/lib/reading-doc";
 import { isUuid, baseCoordinate } from "@/lib/signature";
 import { SESSION_COOKIE, verifySession } from "@/lib/auth";
-import { matchSummary } from "@/lib/sky";
+import { matchSummary, EXACT_MATCH, NEARLY_IDENTICAL } from "@/lib/sky";
 import AddEntry from "./AddEntry";
 import NotifyMe from "./NotifyMe";
 import PasswordGate from "./PasswordGate";
@@ -106,8 +106,8 @@ export default async function ConstellationPage({
   // The where — which constellations — lives on the sky.
   const sum = await matchSummary(resolvedId);
   const sumParts = [
-    sum.exact > 0 ? `${sum.exact} exact` : null,
-    sum.near > 0 ? `${sum.near} nearly identical` : null,
+    sum.exact > 0 ? `${sum.exact} exact (${Math.round(EXACT_MATCH * 100)}%)` : null,
+    sum.near > 0 ? `${sum.near} nearly identical (${Math.round(NEARLY_IDENTICAL * 100)}%)` : null,
   ].filter(Boolean);
 
   // Anyone else sitting on this exact coordinate cell? (other constellations whose
