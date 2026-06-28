@@ -1,0 +1,17 @@
+{
+  "name": "constello-discord-listener",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Holds the Discord gateway websocket and forwards @mentions/replies to Constello's inbound webhook. The only always-on piece; the web app stays serverless.",
+  "main": "index.mjs",
+  "scripts": {
+    "start": "node index.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "discord.js": "^14.16.3"
+  }
+}

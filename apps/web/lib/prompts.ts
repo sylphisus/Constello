@@ -26,6 +26,11 @@ const NODE_READING_INSTRUCTIONS: Record<EntrySource, string> = {
   lastfm: ``,
   twitter: ``,
   pinterest: ``,
+  spotify: ``,
+  obsidian: ``,
+  "google-docs": ``,
+  notion: ``,
+  images: ``,
 };
 
 export function nodeReadingMessages(

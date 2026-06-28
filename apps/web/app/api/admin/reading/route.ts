@@ -50,6 +50,10 @@ export async function POST(req: Request) {
     .upsert(row, { onConflict: "entry_id" });
   if (error) return NextResponse.json({ error: error.message }, { status: 502 });
 
+  // This reading reflects the current material — clear any pending re-read flag so
+  // the entry drops out of the queue (a no-op for sources that never set it).
+  await db.from("entries").update({ needs_reread: false }).eq("id", entryId);
+
   // Which constellation does this entry belong to? Needed for both the signature
   // recompute and the notification.
   const { data: entry } = await db

@@ -42,8 +42,13 @@ export async function createEntry(input: {
   if (!db) return { ok: false, status: 500, error: "Persistence is not configured." };
 
   // Global duplicate guard: if this exact collection already exists anywhere,
-  // route to that constellation instead of creating a second entry.
-  const dup = await findDuplicateEntry(db, input.source, input.label, input.rawText);
+  // route to that constellation instead of creating a second entry. Image
+  // collections are exempt — arbitrary images carry no global identity (their
+  // label is a generic title), so every one is its own world.
+  const dup =
+    input.source === "images"
+      ? null
+      : await findDuplicateEntry(db, input.source, input.label, input.rawText);
   if (dup)
     return { ok: true, constellationId: dup.constellationId, entryId: dup.id, duplicate: true };
 

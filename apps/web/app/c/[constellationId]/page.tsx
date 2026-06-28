@@ -6,10 +6,12 @@ import { buildReadingDoc } from "@/lib/reading-doc";
 import { isUuid, baseCoordinate } from "@/lib/signature";
 import { SESSION_COOKIE, verifySession } from "@/lib/auth";
 import { matchSummary, EXACT_MATCH, NEARLY_IDENTICAL } from "@/lib/sky";
+import { imageUrl } from "@/lib/storage";
 import AddEntry from "./AddEntry";
 import NotifyMe from "./NotifyMe";
 import PasswordGate from "./PasswordGate";
 import ReadingFrame from "./ReadingFrame";
+import ImageCollection, { type ColImage } from "./ImageCollection";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic"; // pending → fulfilled should always be fresh
@@ -78,7 +80,7 @@ export default async function ConstellationPage({
 
   const { data: entries } = await db
     .from("entries")
-    .select("id, label, raw_text, created_at")
+    .select("id, source, label, raw_text, needs_reread, created_at")
     .eq("constellation_id", resolvedId)
     .order("created_at", { ascending: true });
 
@@ -92,6 +94,23 @@ export default async function ConstellationPage({
     readings = r.data ?? [];
   }
   const readingByEntry = new Map(readings.map((r) => [r.entry_id, r.artifact]));
+
+  // Images for any image collections, resolved to URLs server-side (the client
+  // never needs the storage config) and grouped by entry, in order.
+  const imageEntryIds = (entries ?? []).filter((e) => e.source === "images").map((e) => e.id);
+  const imagesByEntry = new Map<string, ColImage[]>();
+  if (imageEntryIds.length) {
+    const { data: imgs } = await db
+      .from("entry_images")
+      .select("id, entry_id, storage_path, position")
+      .in("entry_id", imageEntryIds)
+      .order("position", { ascending: true });
+    for (const im of imgs ?? []) {
+      const arr = imagesByEntry.get(im.entry_id) ?? [];
+      arr.push({ id: im.id, url: imageUrl(im.storage_path) });
+      imagesByEntry.set(im.entry_id, arr);
+    }
+  }
 
   const { data: essence } = await db
     .from("essences")
@@ -180,12 +199,21 @@ export default async function ConstellationPage({
 
       {(entries ?? []).map((e) => {
         const artifact = readingByEntry.get(e.id);
+        const isImages = e.source === "images";
         return (
           <article className="reading-card" key={e.id}>
             {e.label && <p className="essence-eyebrow">{e.label}</p>}
+            {isImages && (
+              <ImageCollection
+                entryId={e.id}
+                images={imagesByEntry.get(e.id) ?? []}
+                needsReread={Boolean(e.needs_reread)}
+                hasReading={Boolean(artifact)}
+              />
+            )}
             {artifact ? (
               <ReadingFrame doc={buildReadingDoc(artifact)} title={e.label || "reading"} />
-            ) : (
+            ) : isImages ? null : (
               <p className="thinking">being read…</p>
             )}
           </article>

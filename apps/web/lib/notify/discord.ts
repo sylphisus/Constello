@@ -49,6 +49,42 @@ export async function resolveMember(username: string): Promise<string | null> {
   }
 }
 
+// Post a reply to a specific message — threads natively off it (the user sees a
+// reply to their own @mention/question). Used by the conversational channel, not
+// the notify knock. Returns true on a 2xx.
+export async function sendDiscordReply(args: {
+  channelId: string;
+  replyToMessageId: string;
+  content: string;
+}): Promise<boolean> {
+  const token = process.env.DISCORD_BOT_TOKEN;
+  if (!token) {
+    console.warn("[notify/discord] DISCORD_BOT_TOKEN not set — reply skipped.");
+    return false;
+  }
+  try {
+    const res = await fetch(`${API}/channels/${args.channelId}/messages`, {
+      method: "POST",
+      headers: botHeaders(token),
+      body: JSON.stringify({
+        content: args.content,
+        message_reference: { message_id: args.replyToMessageId },
+        // Don't ping anyone via the reply text itself; the native reply already
+        // notifies the person being replied to.
+        allowed_mentions: { parse: [], replied_user: true },
+      }),
+    });
+    if (!res.ok) {
+      console.error(`[notify/discord] reply ${res.status}: ${await res.text()}`);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("[notify/discord] reply failed:", err);
+    return false;
+  }
+}
+
 // Ping a resolved member id with a contentless knock in the designated channel.
 export async function sendDiscordPing(userId: string, text: string): Promise<boolean> {
   const token = process.env.DISCORD_BOT_TOKEN;

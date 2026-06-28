@@ -37,10 +37,21 @@ export interface Constellation {
   createdAt: string;
 }
 
-// What kind of collection an entry is. 'text' is pasted/uploaded writing; the
+// What kind of collection an entry is. 'text' is pasted/uploaded writing; most
 // others are fetched from an API and formatted into raw_text by an adapter
-// (lib/collections/*). The reading itself is still fulfilled by hand.
-export type EntrySource = "text" | "lastfm" | "twitter" | "pinterest";
+// (lib/collections/*). 'images' is the exception: its material is bytes (stored
+// in R2, lib/storage), not raw_text — the images themselves are read. The
+// reading itself is still fulfilled by hand.
+export type EntrySource =
+  | "text"
+  | "lastfm"
+  | "twitter"
+  | "pinterest"
+  | "spotify"
+  | "obsidian"
+  | "google-docs"
+  | "notion"
+  | "images";
 
 export interface Entry {
   id: string;
@@ -48,6 +59,16 @@ export interface Entry {
   source: EntrySource;
   label: string;
   rawText: string;
+  createdAt: string;
+}
+
+/** One image in an 'images' collection. Bytes live in R2 at storagePath. */
+export interface EntryImage {
+  id: string;
+  entryId: string;
+  storagePath: string;
+  caption: string;
+  position: number;
   createdAt: string;
 }
 

@@ -60,6 +60,61 @@ Remaining to pull real boards:
 - [ ] **Real connect** = click "Connect Pinterest" → log into Pinterest → grant → boards land as a pending `Pinterest · @user` entry. (Only public boards read.)
 - [ ] **Rotate the client secret** — it was shared in chat; regenerate and re-set the Vercel env.
 
+### Spotify
+
+**Adapter + OAuth connect flow BUILT** (2026-06-27). A Spotify library is a collection type: a "Connect Spotify" tab on the homepage + add-piece flow starts the authorization-code flow at `GET /api/auth/spotify`; the callback (`/api/auth/spotify/callback`) trades the code for a token, pulls the library once via `apps/web/lib/collections/spotify.ts`, formats it into one pending entry (`Spotify · name`, read by hand), and discards the token. What's read (read-only scopes): long-term top artists + tracks, followed artists, saved albums, and playlists (own + followed) with a 20-track sample each. Bounded request count; no token stored. Same code shape as Pinterest.
+
+Remaining to go live:
+- [ ] **Register the app**: developer.spotify.com/dashboard → Create app → copy Client ID + Client secret.
+- [ ] **Exact redirect URI**: canonical domain is **www**, so register `https://www.constello.xyz/api/auth/spotify/callback` (plus `http://localhost:3000/api/auth/spotify/callback` for dev) under the app's Redirect URIs. Must match exactly.
+- [ ] **Env**: set `SPOTIFY_CLIENT_ID` + `SPOTIFY_CLIENT_SECRET` in Vercel (all 3 envs), then redeploy.
+- [ ] **Access tier**: a new Spotify app starts in **Development mode** — only users manually added under Settings → User Management (up to 25, by email) can connect. Add each tester's Spotify email; request a quota extension for broader access later.
+- [ ] **Real connect** = click "Connect Spotify" → log in → grant → library lands as a pending `Spotify · name` entry.
+
+### Notion
+
+**Adapter + OAuth connect flow BUILT** (2026-06-27). A Notion workspace's databases are a collection type: a "Connect Notion" tab on the homepage + add-piece flow starts the authorization-code flow at `GET /api/auth/notion`; the callback (`/api/auth/notion/callback`) trades the code for a token, pulls the granted databases once via `apps/web/lib/collections/notion.ts` (search → query rows → render each page's title + properties), formats them into one pending entry (`Notion · workspace`, read by hand), and discards the token. Notion's own consent screen is the picker — the person chooses exactly which databases the integration sees, so there's no scope string. Same code shape as Pinterest. No creds-free path exists (Notion has no public fetch), so this is blocked until the integration is registered.
+
+Remaining to go live:
+- [ ] **Register a public integration**: notion.so/my-integrations → New integration → type **Public** → copy the OAuth Client ID + Client secret.
+- [ ] **Exact redirect URI**: canonical domain is **www**, so register `https://www.constello.xyz/api/auth/notion/callback` (plus `http://localhost:3000/api/auth/notion/callback` for dev) as a Redirect URI. Must match exactly.
+- [ ] **Env**: set `NOTION_CLIENT_ID` + `NOTION_CLIENT_SECRET` in Vercel (all 3 envs), then redeploy.
+- [ ] **Real connect** = click "Connect Notion" → log in → pick databases to share → they land as a pending `Notion · workspace` entry.
+
+### Google Docs
+
+**Adapter + Picker flow BUILT** (2026-06-27). A Google Doc is a collection type that reads in the same register as general text: a "Google Docs" tab on the homepage + add-piece flow runs Google Identity Services + the Google Picker client-side (`apps/web/components/GoogleDocsButton.tsx`) — the person connects, picks one doc, and the browser gets a short-lived access token. `POST /api/collections/google-docs` exports that doc's plain text once via `apps/web/lib/collections/google-docs.ts` and formats it into one pending entry (`Google Doc · title`, read by hand). Token is used once, not stored. Scope: `drive.readonly` (kept simple; least-privilege upgrade is `drive.file` + Picker `setAppId`, later).
+
+Remaining to go live:
+- [ ] **Google Cloud project**: console.cloud.google.com → create a project → enable the **Google Drive API** and the **Google Picker API**.
+- [ ] **OAuth client + API key**: create an OAuth 2.0 **Web application** client (copy the Client ID) and an **API key** (for the Picker). Configure the OAuth consent screen (External; add testers while unverified — `drive.readonly` is a restricted scope, so broad public use needs verification, but <100 test users is fine unverified).
+- [ ] **Authorized JavaScript origins**: add `https://www.constello.xyz` and `http://localhost:3000` (the Picker runs client-side; no redirect URI needed for the token flow).
+- [ ] **Env (public — these ship to the browser)**: set `NEXT_PUBLIC_GOOGLE_CLIENT_ID` + `NEXT_PUBLIC_GOOGLE_API_KEY` in Vercel (all 3 envs), then redeploy. Until set, the tab shows "Google Docs isn't configured yet."
+- [ ] **Real connect** = click "Connect Google Docs" → grant → pick a doc → it lands as a pending `Google Doc · title` entry.
+
+### Obsidian
+
+- [x] **No account, key, or registration needed** — a vault has no API. The "Obsidian" tab (`apps/web/components/ObsidianButton.tsx`) uses a folder picker (`webkitdirectory`) to read the vault's `.md` notes in the browser and POSTs them to `/api/collections/obsidian`, which formats the notes **and the `[[wikilink]]` graph between them** into one pending entry (`Obsidian · vaultName`, read by hand). Ships now; only the notes the person imports leave their machine. Just bring a vault folder for the first real run.
+
+### Images (general image collection)
+
+**BUILT 2026-06-28.** The only source whose material is *bytes*, not text: a person submits any set of images (≤10 at a time) via the "Images" tab, and the images themselves are the read. Bytes live in **Cloudflare R2** (`apps/web/lib/storage.ts`); Postgres only holds per-image metadata (`entry_images`) + a `needs_reread` flag on `entries`. The owner gets an editor on their constellation page (add/remove images), and any change **queues a re-read** — the entry re-surfaces in the admin pending queue with its thumbnails rendered, while the prior reading stays visible until the new one is pasted in. Image collections carry no global identity, so they're exempt from dedupe (each is its own world, like `text`).
+
+Why R2: S3-compatible, **zero egress fees**, built-in CDN, no scaling cliff. Everything is behind a `storage_path` + `imageUrl()` helper, so a later move to another S3-compatible store (e.g. Backblaze B2) is a bucket copy + env swap, not a rewrite.
+
+Remaining to go live:
+- [ ] **Run the migration**: `apps/web/db/migration.images.sql` in the Supabase SQL editor (adds `entry_images` + `entries.needs_reread`). Safe to re-run.
+- [ ] **Create the R2 bucket**: Cloudflare dashboard → R2 → Create bucket (e.g. `constello-images`). Then **enable public access** — either attach a custom domain (e.g. `images.constello.xyz`) or turn on the bucket's `r2.dev` dev URL — and copy that base URL.
+- [ ] **Create an R2 API token**: R2 → Manage R2 API Tokens → Create (Object Read & Write, scoped to the bucket). Copy the Access Key ID + Secret Access Key, and note the Account ID.
+- [ ] **(Recommended) set a per-bucket file size limit** of ~10 MB so a stray huge upload can't blow through quota (matches the app's 10 MB/image cap).
+- [ ] **Env**: set in Vercel (all 3 envs), then redeploy:
+  - `R2_ACCOUNT_ID` — Cloudflare account id
+  - `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` — the API token pair
+  - `R2_BUCKET` — the bucket name (e.g. `constello-images`)
+  - `R2_PUBLIC_BASE` — the bucket's public URL base, **no trailing slash** (custom domain or `r2.dev` URL)
+  - Until all are set, the Images tab returns "Image storage is not configured."
+- [ ] **Real run** = open a constellation → "Images" tab → pick images → they upload to R2 and land as a pending `Images` entry; the admin queue shows the thumbnails to drag into claude.ai.
+
 ### Last.fm
 
 - [x] **Last.fm API key** — created 2026-06-23, set as `LASTFM_API_KEY` in Vercel (all 3 envs; encrypted). Adapter (`apps/web/lib/collections/lastfm.ts`) verified end-to-end against live data. No OAuth — public scrobbles via the username API.
@@ -93,6 +148,7 @@ Built 2026-06-26 (branch `alpha-manual-readings`). Four channels, all best-effor
 - [ ] **iMessage — self-hosted BlueBubbles** (replaced Photon 2026-06-26; `spectrum-ts` removed): run [BlueBubbles](https://bluebubbles.app) on an always-on Mac signed into iMessage, exposed via a `cloudflared` tunnel. Set `**BLUEBUBBLES_SERVER_URL`**, `**BLUEBUBBLES_PASSWORD**` (outbound REST), and a `**BLUEBUBBLES_WEBHOOK_SECRET**` you choose. Register the BlueBubbles webhook (new-message events) at `POST /api/inbound/imessage?secret=<BLUEBUBBLES_WEBHOOK_SECRET>` (the query secret is how we auth it — BlueBubbles doesn't sign webhooks). Set `**IMESSAGE_NUMBER**` (the Mac's iMessage number in E.164) — the page's "Text us" button deep-links to it (`sms:` with the constellation tag prefilled); the iMessage tab only appears when it's set. **Reply-only by design**: an iMessage contact is created *only* by the inbound webhook (the public `/api/contact` no longer accepts the channel), so every send is a reply in an existing thread, never a cold blast → keeps the Apple ID off the spam heuristics. ⚠️ Confirm the live BlueBubbles new-message payload fields (`data.text`, `data.handle.address`, `data.isFromMe`) against a real event — coded to the documented shape but unverified. ⚠️ Automating a personal iMessage account is grey-area (Apple ToS); reply-only lowers flagging risk but the always-on Mac + tunnel is on you to keep up.
 - [x] **X / Twitter — fully manual, no API/token/cost** (2026-06-27). X killed the free tier; pay-per-use is now ~$0.015/post and OAuth2 user-context tokens expire every 2h — not worth it for the lowest-value channel (a public mention can't carry the link anyway). So there is **no `X_USER_TOKEN` and no auto-post**. Handles are still captured (the X tab → `twitter` contact, `verified=false`) and surfaced in the admin console under **"X handles to notify"**: each row gives a link to the person's profile + to @03constello (check the follow), a uniform paste-ready knock (`@handle your constellation has been read.`), and a **Mark posted** button (sets `verified=true` to drop it off the list). Ethan posts the knock from @03constello by hand. Keeps X off-platform, in line with the project's stance.
 - [ ] **Discord — public @mention in a mutual server**: create a Discord application + bot, enable the **Server Members** privileged intent, and invite the bot to the mutual server with **Send Messages**. Set `**DISCORD_BOT_TOKEN`**, `**DISCORD_GUILD_ID**` (the mutual server), `**DISCORD_CHANNEL_ID**` (where pings post). Opt-in: the person types their Discord username on the constellation page; `/api/contact` resolves it to a snowflake id via the guild member search (we store the **id**, not the username) and marks the contact `verified` iff they're a member — **server membership is the consent gate** (mirrors the X follow-gate). The notification is a public `<@id>` mention — the **knock only, never the link** (a channel is visible to its members). REST-only, no gateway, runs on Vercel functions. The Discord tab only appears when all three env vars are set.
+- [ ] **Discord — conversational channel (talk to Opus about your matches)** (built 2026-06-27): users `@mention` the bot or reply to it; the bot's reply is Ethan's, fulfilled by hand. Conversational by design — slash commands lose the project's essence. **Run the new migration** `apps/web/db/migration.discord-chat.sql` (adds `discord_messages` + the `nearest_servermates()` pgvector RPC that ranks server members by reading-embedding similarity). Because Discord only delivers message content over a gateway websocket (which Vercel serverless can't hold), a small always-on **listener** (`apps/bot/`, the only persistent piece — runs on the Ubuntu box) holds the socket and forwards @mentions/replies to `POST /api/inbound/discord?secret=<DISCORD_INBOUND_SECRET>`. Setup: enable the **Message Content Intent** on the bot (privileged, free under 100 servers); set a new `**DISCORD_INBOUND_SECRET**` you choose (same value in Vercel env *and* `apps/bot/.env`); reuses the existing `DISCORD_BOT_TOKEN`. Flow: inbound question → admin **"Conversations"** section shows it with the asker's world + nearest server-mates (similarity scores) + a copy-ready context bundle → Ethan pastes into claude.ai → pastes Opus's reply back → **Send** posts it as a native Discord reply. Unlinked askers (no constellation) are **auto-onboarded**: the bot replies with a link to start one (and the message stays out of the inbox), so Ethan only sees answerable questions. See `apps/bot/README.md`.
 
 ---
 

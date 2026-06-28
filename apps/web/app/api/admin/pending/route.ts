@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { imageUrl } from "@/lib/storage";
 
 export const runtime = "nodejs";
 
@@ -17,7 +18,7 @@ export async function GET() {
     .select("id, signature, created_at");
   const { data: entries } = await db
     .from("entries")
-    .select("id, constellation_id, source, label, raw_text, created_at")
+    .select("id, constellation_id, source, label, raw_text, needs_reread, created_at")
     .order("created_at", { ascending: true });
   const { data: readings } = await db.from("readings").select("entry_id");
   const { data: essences } = await db.from("essences").select("constellation_id");
@@ -31,7 +32,27 @@ export async function GET() {
 
   const fulfilled = new Set((readings ?? []).map((r) => r.entry_id));
   const hasEssence = new Set((essences ?? []).map((x) => x.constellation_id));
-  const pending = (entries ?? []).filter((e) => !fulfilled.has(e.id));
+  // Pending = never read yet, OR flagged for a re-read after its images changed
+  // (the latter keeps its old reading live until the new one is pasted in).
+  const pending = (entries ?? []).filter((e) => !fulfilled.has(e.id) || e.needs_reread);
+
+  // Attach the images for any image collections in the queue, so the console can
+  // render them — the images ARE the material for the hand-read.
+  const pendingImageIds = pending.filter((e) => e.source === "images").map((e) => e.id);
+  const imagesByEntry = new Map<string, { url: string }[]>();
+  if (pendingImageIds.length) {
+    const { data: imgs } = await db
+      .from("entry_images")
+      .select("entry_id, storage_path, position")
+      .in("entry_id", pendingImageIds)
+      .order("position", { ascending: true });
+    for (const im of imgs ?? []) {
+      const arr = imagesByEntry.get(im.entry_id) ?? [];
+      arr.push({ url: imageUrl(im.storage_path) });
+      imagesByEntry.set(im.entry_id, arr);
+    }
+  }
+  const pendingOut = pending.map((e) => ({ ...e, images: imagesByEntry.get(e.id) ?? [] }));
 
   // Per-constellation rollups, keyed by id.
   type Roll = { entries: number; readings: number; sources: Set<string> };
@@ -85,7 +106,7 @@ export async function GET() {
   return NextResponse.json({
     stats,
     constellations: roster,
-    pending,
+    pending: pendingOut,
     essenceQueue,
     pendingFollows,
     // The console is already behind Basic auth; hand the password back so the

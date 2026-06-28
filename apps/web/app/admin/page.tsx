@@ -15,6 +15,8 @@ interface PendingEntry {
   label: string;
   raw_text: string;
   created_at: string;
+  needs_reread?: boolean;
+  images?: { url: string }[];
 }
 interface RosterItem {
   id: string;
@@ -203,7 +205,7 @@ export default function Admin() {
           <Section title="Constellations" count={roster.length}>
             {roster.length === 0 && <Empty>No constellations yet.</Empty>}
             {roster.map((c) => (
-              <RosterRow key={c.id} item={c} />
+              <RosterRow key={c.id} item={c} onDeleted={load} />
             ))}
           </Section>
 
@@ -275,25 +277,63 @@ function StatBar({ stats }: { stats: Stats }) {
   );
 }
 
-function RosterRow({ item }: { item: RosterItem }) {
+function RosterRow({ item, onDeleted }: { item: RosterItem; onDeleted: () => void }) {
+  const [busy, setBusy] = useState(false);
+
+  async function remove() {
+    if (busy) return;
+    if (
+      !confirm(
+        `Delete constellation ${item.id.slice(0, 8)} and everything under it ` +
+          `(${item.entries} entries, ${item.readings} readings` +
+          `${item.hasEssence ? ", essence" : ""})? This can't be undone.`,
+      )
+    )
+      return;
+    setBusy(true);
+    try {
+      const res = await fetch("/api/admin/constellation", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ constellationId: item.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Delete failed.");
+      onDeleted();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Delete failed.");
+      setBusy(false);
+    }
+  }
+
   return (
-    <a href={`/c/${item.id}`} target="_blank" rel="noreferrer" style={rosterRow}>
-      <span style={star(item.readings > 0)}>✦</span>
-      <Cid id={item.id} />
-      <span style={badges}>
-        {item.sources.map((s) => (
-          <span key={s} style={sourceBadge}>
-            {s}
-          </span>
-        ))}
-      </span>
-      <span style={dim}>
-        {item.readings}/{item.entries} read
-        {item.hasEssence && <span style={essenceDot}> · essence</span>}
-        {item.signature == null && <span> · unread</span>}
-      </span>
-      <span style={{ ...dim, marginLeft: "auto" }}>{ago(item.createdAt)}</span>
-    </a>
+    <div style={rosterRow}>
+      <a
+        href={`/c/${item.id}`}
+        target="_blank"
+        rel="noreferrer"
+        style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, textDecoration: "none", color: "inherit" }}
+      >
+        <span style={star(item.readings > 0)}>✦</span>
+        <Cid id={item.id} />
+        <span style={badges}>
+          {item.sources.map((s) => (
+            <span key={s} style={sourceBadge}>
+              {s}
+            </span>
+          ))}
+        </span>
+        <span style={dim}>
+          {item.readings}/{item.entries} read
+          {item.hasEssence && <span style={essenceDot}> · essence</span>}
+          {item.signature == null && <span> · unread</span>}
+        </span>
+        <span style={{ ...dim, marginLeft: "auto" }}>{ago(item.createdAt)}</span>
+      </a>
+      <button onClick={remove} disabled={busy} style={{ ...ghostBtn, padding: "4px 10px" }}>
+        {busy ? "…" : "Delete"}
+      </button>
+    </div>
   );
 }
 
@@ -320,7 +360,11 @@ function PendingCard({
   const isPinCapture =
     entry.source === "pinterest" && entry.raw_text.startsWith(PIN_PLACEHOLDER_PREFIX);
   const boardUrl = isPinCapture ? pinBoardUrl(entry.raw_text) : null;
-  const copyText = isPinCapture ? PROMPT : `${PROMPT}\n\n${entry.raw_text}`;
+  // An image collection's material is the images themselves (like a Pinterest
+  // capture) — the prompt goes to claude.ai alongside the dragged-in images.
+  const isImages = entry.source === "images";
+  const dragMaterial = isPinCapture || isImages;
+  const copyText = dragMaterial ? PROMPT : `${PROMPT}\n\n${entry.raw_text}`;
 
   async function save() {
     if (!artifact.trim() || busy) return;
@@ -390,14 +434,38 @@ function PendingCard({
         </div>
       )}
 
+      {isImages && (
+        <div style={{ marginTop: 10 }}>
+          {entry.needs_reread && (
+            <p style={{ ...hint, color: "var(--essence)" }}>
+              Re-read requested — the images changed.
+            </p>
+          )}
+          {entry.images && entry.images.length > 0 ? (
+            <div style={imageGrid}>
+              {entry.images.map((im, i) => (
+                <a key={i} href={im.url} target="_blank" rel="noreferrer" style={imageCell}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={im.url} alt="" style={imageImg} />
+                </a>
+              ))}
+            </div>
+          ) : (
+            <p style={hint}>No images on this collection.</p>
+          )}
+        </div>
+      )}
+
       {awaitingCapture ? (
         <p style={hint}>No posts captured yet. Run the command above, then Refresh.</p>
       ) : (
         <>
           <p style={hint}>
-            {isPinCapture
-              ? "Drag the screenshots into claude.ai with this prompt:"
-              : "Copy into claude.ai:"}
+            {isImages
+              ? "Drag the images above into claude.ai with this prompt:"
+              : isPinCapture
+                ? "Drag the screenshots into claude.ai with this prompt:"
+                : "Copy into claude.ai:"}
           </p>
           <textarea
             readOnly
@@ -899,6 +967,25 @@ const card: CSSProperties = {
   background: "var(--bg-soft)",
 };
 const meta: CSSProperties = { fontSize: 12, color: "var(--ink-faint)" };
+const imageGrid: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fill, minmax(96px, 1fr))",
+  gap: 6,
+  marginTop: 6,
+};
+const imageCell: CSSProperties = {
+  display: "block",
+  aspectRatio: "1 / 1",
+  borderRadius: 6,
+  overflow: "hidden",
+  border: "1px solid var(--hair)",
+};
+const imageImg: CSSProperties = {
+  width: "100%",
+  height: "100%",
+  objectFit: "cover",
+  display: "block",
+};
 const matchRow: CSSProperties = {
   display: "flex",
   alignItems: "center",

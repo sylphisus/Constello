@@ -381,6 +381,70 @@ a.ghost-btn {
   color: var(--ink);
 }
 
+/* ── image collections (owner-side grid + editor) ──────────────────────── */
+.image-collection {
+  margin: 18px 0 6px;
+}
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+  gap: 8px;
+}
+.image-cell {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--hair);
+}
+.image-cell img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.image-remove {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 22px;
+  height: 22px;
+  line-height: 1;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.image-cell:hover .image-remove {
+  opacity: 1;
+}
+.image-remove:disabled {
+  cursor: default;
+}
+.image-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / 1;
+  border: 1px dashed var(--hair-strong);
+  border-radius: 8px;
+  color: var(--ink-faint);
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.12s ease, color 0.12s ease;
+}
+.image-add:hover {
+  border-color: var(--ink-faint);
+  color: var(--ink-soft);
+}
+.image-add input {
+  display: none;
+}
+
 /* ── the essence synthesis ─────────────────────────────────────────────── */
 .essence-block {
   margin-top: 60px;
