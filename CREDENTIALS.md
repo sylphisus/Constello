@@ -102,18 +102,13 @@ Remaining to go live:
 
 Why R2: S3-compatible, **zero egress fees**, built-in CDN, no scaling cliff. Everything is behind a `storage_path` + `imageUrl()` helper, so a later move to another S3-compatible store (e.g. Backblaze B2) is a bucket copy + env swap, not a rewrite.
 
-Remaining to go live:
-- [ ] **Run the migration**: `apps/web/db/migration.images.sql` in the Supabase SQL editor (adds `entry_images` + `entries.needs_reread`). Safe to re-run.
-- [ ] **Create the R2 bucket**: Cloudflare dashboard → R2 → Create bucket (e.g. `constello-images`). Then **enable public access** — either attach a custom domain (e.g. `images.constello.xyz`) or turn on the bucket's `r2.dev` dev URL — and copy that base URL.
-- [ ] **Create an R2 API token**: R2 → Manage R2 API Tokens → Create (Object Read & Write, scoped to the bucket). Copy the Access Key ID + Secret Access Key, and note the Account ID.
-- [ ] **(Recommended) set a per-bucket file size limit** of ~10 MB so a stray huge upload can't blow through quota (matches the app's 10 MB/image cap).
-- [ ] **Env**: set in Vercel (all 3 envs), then redeploy:
-  - `R2_ACCOUNT_ID` — Cloudflare account id
-  - `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` — the API token pair
-  - `R2_BUCKET` — the bucket name (e.g. `constello-images`)
-  - `R2_PUBLIC_BASE` — the bucket's public URL base, **no trailing slash** (custom domain or `r2.dev` URL)
-  - Until all are set, the Images tab returns "Image storage is not configured."
-- [ ] **Real run** = open a constellation → "Images" tab → pick images → they upload to R2 and land as a pending `Images` entry; the admin queue shows the thumbnails to drag into claude.ai.
+**LIVE + verified (2026-06-28).** All provisioning done and a real production round trip passed (submit → store in R2 → public serve → SHA-256 dedupe → cascade delete).
+- [x] **Migration run** against live Supabase (`entry_images` + `entries.needs_reread`).
+- [x] **R2 bucket** `constello-images` created, public dev URL enabled: `https://pub-4df8569ad489439cb012260f256b3345.r2.dev`. (Account `50c62e69c5979a65cdee7ed7f45ab956`.)
+- [x] **R2 API token** (S3 keys) created; the app uses these at runtime. The provisioning `cfat_` Bearer token is **not** stored — rotate or revoke it anytime.
+- [x] **Env set in Vercel** (all 3 envs, encrypted): `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_BASE`.
+- [ ] **(Optional) per-bucket file size limit** of ~10 MB as a belt-and-suspenders cap (the app already enforces 10 MB/image; not set in R2 yet).
+- [ ] **(Optional) custom domain** (`images.constello.xyz`) instead of the `r2.dev` URL — cleaner long-term, needs a DNS record.
 
 ### Last.fm
 
