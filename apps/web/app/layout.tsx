@@ -36,6 +36,7 @@ export default function RootLayout({
           </a>
           <a href="https://docs.constello.xyz">Docs</a>
           <a href="/sky">Sky</a>
+          <a href="/connections">Connections</a>
         </nav>
         {children}
       </body>

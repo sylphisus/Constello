@@ -209,6 +209,10 @@ export default function Admin() {
             ))}
           </Section>
 
+          <Section title="Reset a constellation password">
+            <ResetPassword />
+          </Section>
+
           <Section title="Queue an X handle">
             <XQueue onQueued={load} password={adminPassword} />
           </Section>
@@ -639,6 +643,71 @@ function PinterestQueue({ onQueued }: { onQueued: () => void }) {
           <BridgeBlock command={captureCommand(queued.url)} />
         </div>
       )}
+    </section>
+  );
+}
+
+// Recover a locked-out constellation (the auth model has no self-serve reset).
+// Set a new password and hand it over (recommended), or clear it so the next
+// visitor re-claims. Posts to /api/admin/reset-password (Basic-auth gated).
+function ResetPassword() {
+  const [id, setId] = useState("");
+  const [password, setPassword] = useState("");
+  const [state, setState] = useState<"idle" | "busy" | "done" | "error">("idle");
+  const [mode, setMode] = useState("");
+
+  async function submit(clear: boolean) {
+    const constellationId = id.trim();
+    if (!constellationId || state === "busy") return;
+    if (!clear && !password.trim()) return;
+    setState("busy");
+    setMode("");
+    try {
+      const res = await fetch("/api/admin/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ constellationId, password: clear ? "" : password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed.");
+      setMode(data.mode);
+      setPassword("");
+      setState("done");
+    } catch {
+      setState("error");
+    }
+  }
+
+  return (
+    <section style={card}>
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+        <input
+          value={id}
+          onChange={(e) => setId(e.target.value)}
+          placeholder="constellation id (uuid)"
+          style={input}
+        />
+        <input
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="new password"
+          style={{ ...input, flex: "0 0 180px" }}
+        />
+        <button onClick={() => submit(false)} disabled={state === "busy"} style={btn}>
+          Set
+        </button>
+        <button onClick={() => submit(true)} disabled={state === "busy"} style={ghostBtn}>
+          Clear
+        </button>
+      </div>
+      <p style={hint}>
+        Set a new password and hand it to the person (recommended), or clear it so the
+        next visitor re-claims.
+      </p>
+      {state === "done" && (
+        <p style={{ ...hint, color: "var(--essence)" }}>Done — password {mode}.</p>
+      )}
+      {state === "error" && <p style={{ color: "var(--red)" }}>Failed.</p>}
     </section>
   );
 }

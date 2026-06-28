@@ -17,7 +17,9 @@ import { sendDiscordPing } from "./discord";
 // contacts; the admin surfaces each with a follow-check link and a ready-to-paste
 // knock that Ethan posts from @03constello by hand.
 
-export type NotifyKind = "reading" | "essence";
+// reading/essence land on your own constellation; share/request are connection
+// events (someone shared with you, or asked to see you).
+export type NotifyKind = "reading" | "essence" | "share" | "request";
 
 interface Contact {
   id: string;
@@ -41,14 +43,45 @@ function knock(kind: NotifyKind, capitalize = false): string {
   const line =
     kind === "essence"
       ? "your essence has been written."
-      : "your constellation has been read.";
+      : kind === "share"
+        ? "someone shared their constellation with you."
+        : kind === "request"
+          ? "someone asked to see your constellation."
+          : "your constellation has been read.";
   return capitalize ? line.charAt(0).toUpperCase() + line.slice(1) : line;
 }
 
+// A reading/essence landed on the recipient's own constellation.
 export async function notifyReadingReady(args: {
   constellationId: string;
   kind: NotifyKind;
   ref: string; // entry_id for a reading, constellation_id for an essence
+}): Promise<void> {
+  return notify({ ...args, link: `${appUrl()}/c/${args.constellationId}` });
+}
+
+// A connection event for the recipient: someone shared with them ('share') or
+// asked to see them ('request'). `ref` is the *other* constellation's id, so the
+// (contact, kind, ref) idempotency key is once-per-other-party. The link goes to
+// the recipient's own constellation, from which they reach /connections.
+export async function notifyConnection(args: {
+  recipientId: string;
+  kind: "share" | "request";
+  ref: string;
+}): Promise<void> {
+  return notify({
+    constellationId: args.recipientId,
+    kind: args.kind,
+    ref: args.ref,
+    link: `${appUrl()}/c/${args.recipientId}`,
+  });
+}
+
+async function notify(args: {
+  constellationId: string;
+  kind: NotifyKind;
+  ref: string;
+  link: string;
 }): Promise<void> {
   const db = supabase();
   if (!db) return;
@@ -59,7 +92,7 @@ export async function notifyReadingReady(args: {
     .eq("constellation_id", args.constellationId);
   if (!contacts?.length) return;
 
-  const link = `${appUrl()}/c/${args.constellationId}`;
+  const link = args.link;
 
   for (const c of contacts as Contact[]) {
     // Never notify an unverified contact. Email opt-in and the iMessage inbound

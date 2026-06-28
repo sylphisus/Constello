@@ -6,6 +6,7 @@ import { buildReadingDoc } from "@/lib/reading-doc";
 import { isUuid, baseCoordinate } from "@/lib/signature";
 import { SESSION_COOKIE, verifySession } from "@/lib/auth";
 import { matchSummary, EXACT_MATCH, NEARLY_IDENTICAL } from "@/lib/sky";
+import { canView } from "@/lib/share";
 import { imageUrl } from "@/lib/storage";
 import AddEntry from "./AddEntry";
 import NotifyMe from "./NotifyMe";
@@ -65,11 +66,13 @@ export default async function ConstellationPage({
     redirect(`/c/${constellation.signature}`);
   }
 
-  // A constellation is private: only its owner (a session vouching for this id)
-  // can open it. Everyone else — including someone who has the link — gets the
-  // gate, which sets the password on first arrival (claim) or checks it after.
+  // A constellation is private. The owner (a session vouching for this id) gets
+  // the full page; a constellation that's been granted access (lib/share) gets a
+  // read-only view; everyone else gets the gate, which sets the password on first
+  // arrival (claim) or checks it after.
   const session = verifySession((await cookies()).get(SESSION_COOKIE)?.value);
-  if (session !== resolvedId) {
+  const isOwner = session === resolvedId;
+  if (!isOwner && !(await canView(session, resolvedId))) {
     return (
       <PasswordGate
         constellationId={resolvedId}
@@ -122,8 +125,9 @@ export default async function ConstellationPage({
   const pending = (entries?.length ?? 0) - fulfilled;
 
   // How many of your collections rhyme with someone else's (full-dim cosine).
-  // The where — which constellations — lives on the sky.
-  const sum = await matchSummary(resolvedId);
+  // The where — which constellations — lives on the sky. Owner-only (it's your
+  // private count, not for a visitor).
+  const sum = isOwner ? await matchSummary(resolvedId) : { exact: 0, near: 0 };
   const sumParts = [
     sum.exact > 0 ? `${sum.exact} exact (${Math.round(EXACT_MATCH * 100)}%)` : null,
     sum.near > 0 ? `${sum.near} nearly identical (${Math.round(NEARLY_IDENTICAL * 100)}%)` : null,
@@ -192,7 +196,7 @@ export default async function ConstellationPage({
 
       {essence?.artifact && (
         <section className="essence-block">
-          <p className="essence-eyebrow">Your essence</p>
+          <p className="essence-eyebrow">{isOwner ? "Your essence" : "Essence"}</p>
           <ReadingFrame doc={buildReadingDoc(essence.artifact)} title="essence" />
         </section>
       )}
@@ -203,7 +207,7 @@ export default async function ConstellationPage({
         return (
           <article className="reading-card" key={e.id}>
             {e.label && <p className="essence-eyebrow">{e.label}</p>}
-            {isImages && (
+            {isImages && isOwner && (
               <ImageCollection
                 entryId={e.id}
                 images={imagesByEntry.get(e.id) ?? []}
@@ -220,22 +224,32 @@ export default async function ConstellationPage({
         );
       })}
 
-      <AddEntry constellationId={resolvedId} />
+      {isOwner && (
+        <>
+          <AddEntry constellationId={resolvedId} />
 
-      <NotifyMe
-        constellationId={resolvedId}
-        imessageNumber={process.env.IMESSAGE_NUMBER}
-        discordEnabled={Boolean(
-          process.env.DISCORD_BOT_TOKEN &&
-            process.env.DISCORD_GUILD_ID &&
-            process.env.DISCORD_CHANNEL_ID,
-        )}
-      />
+          <NotifyMe
+            constellationId={resolvedId}
+            imessageNumber={process.env.IMESSAGE_NUMBER}
+            discordEnabled={Boolean(
+              process.env.DISCORD_BOT_TOKEN &&
+                process.env.DISCORD_GUILD_ID &&
+                process.env.DISCORD_CHANNEL_ID,
+            )}
+          />
 
-      <p className="persist-flag">
-        {fulfilled} read · {pending} pending · this link is your constellation —
-        return to it
-      </p>
+          <p className="persist-flag">
+            {fulfilled} read · {pending} pending · this link is your constellation —
+            return to it
+          </p>
+        </>
+      )}
+
+      {!isOwner && (
+        <p className="persist-flag">
+          shared with you · {fulfilled} read — you&apos;re viewing, not editing
+        </p>
+      )}
     </main>
   );
 }

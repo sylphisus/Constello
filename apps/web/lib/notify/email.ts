@@ -20,7 +20,11 @@ export async function sendEmail(
   const subject =
     kind === "essence"
       ? "Your essence has been written."
-      : "Your constellation has been read.";
+      : kind === "share"
+        ? "Someone shared their constellation with you."
+        : kind === "request"
+          ? "Someone asked to see your constellation."
+          : "Your constellation has been read.";
   const text = `${subject}\n\n${link}`;
 
   try {

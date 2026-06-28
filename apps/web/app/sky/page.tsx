@@ -22,13 +22,15 @@ export default async function SkyPage() {
     );
   }
 
-  // Strip raw constellation ids before sending to the client; attach only the
-  // viewer-relative count so other people's identities never reach the browser.
+  // The constellation id rides along so a logged-in viewer can request/share with
+  // a star's owner. It's just a uuid — harmless on its own, since pages stay
+  // private (password + grant gated); knowing the id grants nothing.
   const stars = sky.stars.map((s) => ({
     x: s.x,
     y: s.y,
     mine: s.mine,
     match: s.match,
+    constellationId: s.constellationId,
     groupMatchCount: sky.matchCountByConstellation[s.constellationId] ?? 0,
   }));
 

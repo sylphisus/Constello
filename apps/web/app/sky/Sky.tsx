@@ -7,13 +7,15 @@ type Star = {
   y: number;
   mine: boolean;
   match: "exact" | "near" | null;
+  constellationId: string;
   groupMatchCount: number;
 };
 type Link = { a: number; b: number; kind: "exact" | "near" };
 
 // White stars on a gentle dark sky; your own stars and your near-twins glow gold,
-// connected by a gold pulse (the recognition — drawn from full-dim cosine, not
-// pixel distance). Hover a star to read your overlap with that constellation.
+// connected by a gold pulse (recognition — from full-dim cosine, not pixel
+// distance). Hover to read your overlap; click another star to reach out — request
+// to see them (shares yours first) or just share yours.
 export default function Sky({
   stars,
   links,
@@ -26,6 +28,7 @@ export default function Sky({
   selfHref: string | null;
 }) {
   const [hover, setHover] = useState<number | null>(null);
+  const [selected, setSelected] = useState<number | null>(null);
 
   const W = 1000;
   const H = 640;
@@ -49,8 +52,10 @@ export default function Sky({
           : "another collection — no near match with yours"
         : "a collection"
     : loggedIn
-      ? "hover a star · gold links are your near-twins"
-      : "hover a star · log in to your constellation to see your matches";
+      ? "hover a star · click another to reach out"
+      : "hover a star · log in to your constellation to connect";
+
+  const sel = selected != null ? stars[selected] : null;
 
   return (
     <div className="sky">
@@ -70,14 +75,20 @@ export default function Sky({
             key={i}
             cx={sx(s.x)}
             cy={sy(s.y)}
-            r={s.mine ? 5 : 3}
+            r={s.mine ? 5 : selected === i ? 5 : 3}
             className={`star${s.mine ? " star-mine" : ""}${s.match ? " star-" + s.match : ""}`}
+            style={{ cursor: !s.mine && loggedIn ? "pointer" : "default" }}
             onMouseEnter={() => setHover(i)}
             onMouseLeave={() => setHover((h) => (h === i ? null : h))}
+            onClick={() => !s.mine && loggedIn && setSelected(i)}
           />
         ))}
       </svg>
+
       <p className="sky-info">{infoText}</p>
+
+      {sel && !sel.mine && loggedIn && <ReachOut targetId={sel.constellationId} />}
+
       {selfHref && (
         <p className="sky-self">
           <a className="text-link" href={selfHref}>
@@ -85,6 +96,47 @@ export default function Sky({
           </a>
         </p>
       )}
+    </div>
+  );
+}
+
+// Reach out to a selected star's constellation: request to see them (shares yours
+// first) or just share yours. One outcome line; the owner acts from /connections.
+function ReachOut({ targetId }: { targetId: string }) {
+  const [state, setState] = useState<"idle" | "busy" | "requested" | "shared" | "error">("idle");
+
+  async function act(kind: "request" | "share") {
+    if (state === "busy") return;
+    setState("busy");
+    try {
+      const res = await fetch(`/api/${kind}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetId }),
+      });
+      if (!res.ok) throw new Error();
+      setState(kind === "request" ? "requested" : "shared");
+    } catch {
+      setState("error");
+    }
+  }
+
+  if (state === "requested") {
+    return <p className="sky-reach">requested — they’ve been told, and they can see yours now.</p>;
+  }
+  if (state === "shared") {
+    return <p className="sky-reach">shared — yours is open to them now.</p>;
+  }
+
+  return (
+    <div className="sky-reach">
+      <button className="ghost-btn sky-reach-btn" onClick={() => act("request")} disabled={state === "busy"}>
+        request to see
+      </button>
+      <button className="ghost-btn sky-reach-btn" onClick={() => act("share")} disabled={state === "busy"}>
+        share mine
+      </button>
+      {state === "error" && <span className="error">failed — try again</span>}
     </div>
   );
 }

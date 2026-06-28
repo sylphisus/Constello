@@ -132,6 +132,19 @@ body {
   margin-top: 6px;
   font-size: 12px;
 }
+.sky-reach {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.sky-reach-btn {
+  width: auto;
+  padding: 7px 14px;
+}
 .match-summary {
   margin-top: 14px;
   font-size: 13px;
