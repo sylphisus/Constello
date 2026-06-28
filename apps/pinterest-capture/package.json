@@ -1,0 +1,17 @@
+{
+  "name": "constello-pinterest-capture",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local tool: scroll-captures a Pinterest board into a sequence of screenshots for a by-hand reading. Bypasses the v5 API, which only sees pin text and misses the imagery that *is* a visual board.",
+  "main": "capture.mjs",
+  "scripts": {
+    "start": "node capture.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "playwright-core": "^1.49.0"
+  }
+}

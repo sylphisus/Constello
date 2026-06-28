@@ -43,6 +43,23 @@ interface Stats {
   pending: number;
   essences: number;
 }
+interface Match {
+  constellation_id: string;
+  similarity: number;
+  signature: string | null;
+  essence: string | null;
+}
+interface Conversation {
+  id: string;
+  username: string;
+  userId: string;
+  constellationId: string | null;
+  content: string;
+  createdAt: string;
+  asker: { essence: string | null; readings: string[] } | null;
+  matches: Match[];
+  contextText: string;
+}
 
 const PROMPT = "Conduct a personal analysis of this.";
 
@@ -52,6 +69,25 @@ const BRIDGE_DIR = "~/Documents/twitter-preservation";
 // A queued-but-unfilled X entry carries this placeholder body (see
 // /api/collections/twitter); the posts arrive later via the bridge.
 const X_PLACEHOLDER_PREFIX = "Pending X / Twitter capture";
+
+// Where the local Pinterest capture tool lives (in this repo). It can't run in
+// prod (headed browser), so the console prints a ready-to-paste local command.
+const CAPTURE_DIR = '~/"Documents/constello build/apps/pinterest-capture"';
+// A queued Pinterest board carries this placeholder body (see
+// /api/collections/pinterest); the board URL is appended after "Board: ".
+const PIN_PLACEHOLDER_PREFIX = "Pending Pinterest capture";
+
+// The local command that scroll-screenshots a board. "Screenshots only": it
+// writes PNGs you drag into claude.ai by hand — nothing is pushed back, so no
+// constellation id or password is needed (unlike the X bridge).
+function captureCommand(boardUrl: string): string {
+  return `cd ${CAPTURE_DIR}\nnpm start -- "${boardUrl}"`;
+}
+
+// Recover the board URL from a queued Pinterest entry's placeholder body.
+function pinBoardUrl(rawText: string): string | null {
+  return rawText.match(/https?:\/\/\S+/)?.[0] ?? null;
+}
 
 // "X · @handle" → "handle" (the deterministic label formatTwitter writes).
 function xHandle(label: string): string | null {
@@ -85,6 +121,7 @@ export default function Admin() {
   const [pending, setPending] = useState<PendingEntry[]>([]);
   const [essenceQueue, setEssenceQueue] = useState<EssenceItem[]>([]);
   const [pendingFollows, setPendingFollows] = useState<PendingFollow[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [adminPassword, setAdminPassword] = useState("");
   const [loading, setLoading] = useState(true);
   // True only until the first load settles. Refreshes after that keep the page
@@ -96,7 +133,10 @@ export default function Admin() {
     setLoading(true);
     setErr("");
     try {
-      const res = await fetch("/api/admin/pending");
+      const [res, convRes] = await Promise.all([
+        fetch("/api/admin/pending"),
+        fetch("/api/admin/discord"),
+      ]);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to load.");
       setStats(data.stats ?? null);
@@ -105,6 +145,9 @@ export default function Admin() {
       setEssenceQueue(data.essenceQueue ?? []);
       setPendingFollows(data.pendingFollows ?? []);
       setAdminPassword(data.adminPassword ?? "");
+      // Conversations are best-effort: a failure here shouldn't blank the console.
+      const convData = await convRes.json().catch(() => ({}));
+      setConversations(convRes.ok ? (convData.questions ?? []) : []);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Failed to load.");
     } finally {
@@ -148,6 +191,15 @@ export default function Admin() {
         <p style={{ color: "var(--ink-soft)" }}>Loading…</p>
       ) : (
         <>
+          <Section title="Conversations" count={conversations.length}>
+            {conversations.length === 0 && (
+              <Empty>No one is asking the bot anything right now.</Empty>
+            )}
+            {conversations.map((c) => (
+              <ConversationCard key={c.id} item={c} onSent={load} />
+            ))}
+          </Section>
+
           <Section title="Constellations" count={roster.length}>
             {roster.length === 0 && <Empty>No constellations yet.</Empty>}
             {roster.map((c) => (
@@ -157,6 +209,10 @@ export default function Admin() {
 
           <Section title="Queue an X handle">
             <XQueue onQueued={load} password={adminPassword} />
+          </Section>
+
+          <Section title="Capture a Pinterest board">
+            <PinterestQueue onQueued={load} />
           </Section>
 
           <Section title="Pending readings" count={pending.length}>
@@ -253,7 +309,18 @@ function PendingCard({
   const [artifact, setArtifact] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
-  const copyText = `${PROMPT}\n\n${entry.raw_text}`;
+
+  // What this entry is, by source. A queued X handle is filled off-platform by the
+  // bridge; a queued Pinterest board is read from screenshots (the images ARE the
+  // material, so the prompt goes to claude.ai alone). Older OAuth-imported pinterest
+  // entries and every other source read from their raw_text as usual.
+  const handle = entry.source === "twitter" ? xHandle(entry.label) : null;
+  const awaitingCapture =
+    entry.source === "twitter" && entry.raw_text.startsWith(X_PLACEHOLDER_PREFIX);
+  const isPinCapture =
+    entry.source === "pinterest" && entry.raw_text.startsWith(PIN_PLACEHOLDER_PREFIX);
+  const boardUrl = isPinCapture ? pinBoardUrl(entry.raw_text) : null;
+  const copyText = isPinCapture ? PROMPT : `${PROMPT}\n\n${entry.raw_text}`;
 
   async function save() {
     if (!artifact.trim() || busy) return;
@@ -294,13 +361,6 @@ function PendingCard({
     }
   }
 
-  // An X entry that's still just a queued handle has no posts to read yet — it's
-  // filled off-platform by the bridge. Show the command to run; hide the reading
-  // workflow until the posts arrive.
-  const handle = entry.source === "twitter" ? xHandle(entry.label) : null;
-  const awaitingCapture =
-    entry.source === "twitter" && entry.raw_text.startsWith(X_PLACEHOLDER_PREFIX);
-
   return (
     <section style={card}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
@@ -323,11 +383,22 @@ function PendingCard({
         </div>
       )}
 
+      {isPinCapture && boardUrl && (
+        <div style={{ marginTop: 10 }}>
+          <p style={hint}>Capture the board locally (screenshots open when it finishes):</p>
+          <BridgeBlock command={captureCommand(boardUrl)} />
+        </div>
+      )}
+
       {awaitingCapture ? (
         <p style={hint}>No posts captured yet. Run the command above, then Refresh.</p>
       ) : (
         <>
-          <p style={hint}>Copy into claude.ai:</p>
+          <p style={hint}>
+            {isPinCapture
+              ? "Drag the screenshots into claude.ai with this prompt:"
+              : "Copy into claude.ai:"}
+          </p>
           <textarea
             readOnly
             value={copyText}
@@ -437,6 +508,67 @@ function XQueue({ onQueued, password }: { onQueued: () => void; password: string
             locally to fill it, then Refresh:
           </p>
           <BridgeBlock command={bridgeCommand(queued.handle, queued.constellationId, password)} />
+        </div>
+      )}
+    </section>
+  );
+}
+
+// Seed a new Pinterest reading from admin: queues a pending entry for the board
+// (same route a public Pinterest tab would use) and immediately shows the local
+// capture command. Screenshots-only — no bridge push-back, so no password here.
+function PinterestQueue({ onQueued }: { onQueued: () => void }) {
+  const [url, setUrl] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [queued, setQueued] = useState<{ url: string; constellationId: string } | null>(null);
+
+  async function queue() {
+    const u = url.trim();
+    if (!u || busy) return;
+    setBusy(true);
+    setErr("");
+    setQueued(null);
+    try {
+      const res = await fetch("/api/collections/pinterest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: u }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to queue.");
+      setQueued({ url: u, constellationId: data.constellationId });
+      setUrl("");
+      onQueued();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Failed to queue.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section style={card}>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <input
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && queue()}
+          placeholder="pinterest.com/user/board/"
+          style={input}
+        />
+        <button onClick={queue} disabled={!url.trim() || busy} style={btn}>
+          {busy ? "Queuing…" : "Queue board"}
+        </button>
+      </div>
+      {err && <p style={{ color: "var(--red)" }}>{err}</p>}
+      {queued && (
+        <div style={{ marginTop: 14 }}>
+          <p style={hint}>
+            Queued → <Cid id={queued.constellationId} />. Capture locally, then drag the
+            screenshots into claude.ai with &ldquo;{PROMPT}&rdquo; and Refresh:
+          </p>
+          <BridgeBlock command={captureCommand(queued.url)} />
         </div>
       )}
     </section>
@@ -556,6 +688,83 @@ function FollowCard({ item, onSaved }: { item: PendingFollow; onSaved: () => voi
           {busy ? "…" : "Mark posted"}
         </button>
       </div>
+      {err && <p style={{ color: "var(--red)" }}>{err}</p>}
+    </section>
+  );
+}
+
+// A conversational question to the bot. The match logic is already done server-
+// side: this surfaces the question, the asker's nearest server-mates (with
+// scores), and a Copy-ready context bundle Ethan pastes into claude.ai. He pastes
+// Opus's answer into the reply box; Send posts it as a native Discord reply.
+function ConversationCard({ item, onSent }: { item: Conversation; onSent: () => void }) {
+  const [reply, setReply] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  async function send() {
+    if (!reply.trim() || busy) return;
+    setBusy(true);
+    setErr("");
+    try {
+      const res = await fetch("/api/admin/discord", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: item.id, content: reply }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Send failed.");
+      onSent();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Send failed.");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section style={card}>
+      <div style={meta}>
+        @{item.username || item.userId} ·{" "}
+        {item.constellationId ? <Cid id={item.constellationId} /> : <span style={{ color: "var(--red)" }}>unlinked</span>} · {ago(item.createdAt)} ago
+      </div>
+      <p style={{ margin: "10px 0", fontSize: 15, color: "var(--ink)" }}>{item.content}</p>
+
+      {!item.constellationId ? (
+        <p style={hint}>
+          No constellation linked to this Discord account — they haven&apos;t submitted, or
+          haven&apos;t connected Discord on their constellation page. Reply to invite them.
+        </p>
+      ) : item.matches.length === 0 ? (
+        <p style={hint}>No other read members on the server to match against yet.</p>
+      ) : (
+        <div style={{ margin: "8px 0" }}>
+          <p style={hint}>Nearest server-mates:</p>
+          {item.matches.map((m) => (
+            <div key={m.constellation_id} style={matchRow}>
+              <Cid id={m.constellation_id} />
+              <span style={dim}>similarity {m.similarity.toFixed(3)}</span>
+              {!m.essence && <span style={{ ...dim, color: "var(--ink-faint)" }}>· no essence yet</span>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {item.constellationId && (
+        <div style={{ margin: "10px 0" }}>
+          <CopyButton text={item.contextText} label="Copy context for Opus" />
+        </div>
+      )}
+
+      <p style={hint}>Paste Opus&apos;s reply, then send it as a Discord reply:</p>
+      <textarea
+        value={reply}
+        onChange={(e) => setReply(e.target.value)}
+        style={{ ...ta, height: 120, fontFamily: "var(--sans)", fontSize: 14 }}
+        placeholder="the reply…"
+      />
+      <button onClick={send} disabled={!reply.trim() || busy} style={btn}>
+        {busy ? "Sending…" : "Send reply"}
+      </button>
       {err && <p style={{ color: "var(--red)" }}>{err}</p>}
     </section>
   );
@@ -690,6 +899,13 @@ const card: CSSProperties = {
   background: "var(--bg-soft)",
 };
 const meta: CSSProperties = { fontSize: 12, color: "var(--ink-faint)" };
+const matchRow: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 10,
+  padding: "5px 0",
+  fontSize: 13,
+};
 const hint: CSSProperties = { fontSize: 12, color: "var(--ink-faint)", margin: "10px 0 4px" };
 const cid: CSSProperties = {
   fontFamily: "ui-monospace, monospace",
