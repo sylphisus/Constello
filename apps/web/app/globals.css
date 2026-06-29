@@ -458,6 +458,49 @@ a.ghost-btn {
   display: none;
 }
 
+/* ── collected Pinterest boards (inline embed) ─────────────────────────── */
+.pinterest-board {
+  margin: 18px 0 6px;
+  /* pinit.js injects a fixed-width grid; on a narrow screen let it scroll
+     rather than push the page wider. */
+  overflow-x: auto;
+}
+
+/* Re-skin Pinterest's embedBoard chrome onto the gentle-dark ground: the pins
+   stay (bright nodes of meaning), but the white card surface and gray follow
+   pill become Constello's dark, outlined surfaces — the gaps between pins fall
+   through to the night. pinit.js timestamps its classes (PIN_<id>_*), so target
+   the stable class fragments + data-pin-log hooks; if Pinterest ever renames
+   them the embed simply falls back to its own look. */
+.pinterest-board [class*="embed_grid"] {
+  background: transparent !important;
+  border: 1px solid var(--hair) !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+}
+/* header (pinner + board name) → light ink so it reads on the dark card */
+.pinterest-board [class*="pinner"],
+.pinterest-board [class*="_board"] {
+  color: var(--ink) !important;
+}
+/* the "Follow on Pinterest" pill: light-gray fill → quiet outline */
+.pinterest-board [data-pin-log="embed_user_ft"] [class*="_button"] {
+  background: transparent !important;
+  border: 1px solid var(--hair-strong) !important;
+  color: var(--ink-soft) !important;
+}
+/* the board's internal scroll (fixed-height pin grid): light scrollbar → faint */
+.pinterest-board *::-webkit-scrollbar {
+  width: 8px;
+}
+.pinterest-board *::-webkit-scrollbar-track {
+  background: transparent;
+}
+.pinterest-board *::-webkit-scrollbar-thumb {
+  background: var(--hair-strong);
+  border-radius: 8px;
+}
+
 /* ── the essence synthesis ─────────────────────────────────────────────── */
 .essence-block {
   margin-top: 60px;

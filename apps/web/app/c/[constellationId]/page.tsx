@@ -13,9 +13,28 @@ import NotifyMe from "./NotifyMe";
 import PasswordGate from "./PasswordGate";
 import ReadingFrame from "./ReadingFrame";
 import ImageCollection, { type ColImage } from "./ImageCollection";
+import PinterestBoard from "./PinterestBoard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic"; // pending → fulfilled should always be fresh
+
+// The live Pinterest path stores the board URL in raw_text ("… Board: <url>").
+// Pull it back out and normalize to a www.pinterest.com board URL for the embed
+// widget. Null for the OAuth text pull (a whole-account read, no single board) —
+// those just render as a normal reading, no embed.
+function pinterestBoardUrl(rawText: string | null): string | null {
+  const m = /Board:\s*(https?:\/\/\S+)/i.exec(rawText ?? "");
+  if (!m) return null;
+  try {
+    const u = new URL(m[1]);
+    if (!/(^|\.)pinterest\.[a-z.]+$/i.test(u.hostname)) return null;
+    const path = u.pathname.replace(/^\/+|\/+$/g, "");
+    if (!path) return null;
+    return `https://www.pinterest.com/${path}/`;
+  } catch {
+    return null;
+  }
+}
 
 // A constellation is reachable by two kinds of link: its uuid (the stable link
 // the person first gets) and its signature — the live star-coordinate shape it
@@ -204,6 +223,7 @@ export default async function ConstellationPage({
       {(entries ?? []).map((e) => {
         const artifact = readingByEntry.get(e.id);
         const isImages = e.source === "images";
+        const boardUrl = e.source === "pinterest" ? pinterestBoardUrl(e.raw_text) : null;
         return (
           <article className="reading-card" key={e.id}>
             {e.label && <p className="essence-eyebrow">{e.label}</p>}
@@ -215,6 +235,7 @@ export default async function ConstellationPage({
                 hasReading={Boolean(artifact)}
               />
             )}
+            {boardUrl && <PinterestBoard href={boardUrl} />}
             {artifact ? (
               <ReadingFrame doc={buildReadingDoc(artifact)} title={e.label || "reading"} />
             ) : isImages ? null : (
