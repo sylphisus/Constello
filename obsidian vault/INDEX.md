@@ -16,7 +16,8 @@ Hand-maintained map. Read [[CORE]] first for what Constello is and how the vault
 
 ## Product and go-to-market
 
-- [[Constello must be a brand before it is an app]] — build the culture and hype pre-launch; it re-educates people into a grammar antithetical to the status quo.
+- [[Constello must be a brand before it is an app]] — build the culture and hype pre-launch (go-to-market: it teaches people the app's different grammar before they arrive); plus the moat argument (culture is the only ownable layer since the tech is copyable, and the network/graph moat is deferred not refused) and merch as the matching cultural revenue.
+- [[The 03 handle — parent hub and the refusal in the name]] — 03 as the parent brand with derivative handles; building on a deliberately "worthless" OG handle as the reading philosophy applied to the brand's own name — legible through the trajectory ("grows in spite of"), never explained.
 - [[The approach device — engineered accident as zero-risk entry]] — a 3D-printed stranger-approach tool; engineered accidental encounter with a frictionless exit and a frictionless segue into Constello.
 - [[Ideas to implement]] — birthdays as the one honored parameter; referral-connection achievements and a founder easter egg.
 - [[05-15-2026 Conversation with coral]] — raw spark: everyone collects things too idiosyncratic to index until AI; that's the space Constello occupies.

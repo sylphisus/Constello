@@ -37,5 +37,4 @@ Constello is the same primitive — voyage-4-large, nearest neighbors in a vecto
 
 Same machine. The platform points it down and optimizes you into isolation; Constello points it across and ends the exile.
 
-[^origin]: [[Constello — Origin]]
 [^attn]: [[Why the attention economy fails]]

@@ -59,5 +59,3 @@ All treated the problem as *too much* and tried to solve it by imposing scarcity
 ## Name
 
 **Constellation** (working title), also called *Ascension* in early thinking.
-
-[^deepening]: [[Constello — Architectural Deepening]]

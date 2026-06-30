@@ -69,5 +69,3 @@ This is the structurally identical synthesis move to Constello's, on a different
 - Is the antithesis still consolidating, or has it already fragmented into competing sub-movements (forum culture vs. broader self-improvement tendency), some of which can synthesize and some of which can't?
 - What conditions does the synthesis need to arrive culturally, not just philosophically? Is it waiting on infrastructure (Constello-type platforms), figureheads (the whitepill streamer), or something else?
 - The forum users are notably young (13 in one screenshot). The dialectic is being arrested at the antithesis stage for a generation that never internalized the thesis. What does that do to the dialectical motion?
-
-[^deepening]: [[Constello — Architectural Deepening]]
