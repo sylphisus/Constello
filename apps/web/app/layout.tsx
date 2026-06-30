@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import ConnectionsDrawer from "./ConnectionsDrawer";
 
 export const metadata: Metadata = {
   title: "Constello",
@@ -27,16 +28,8 @@ export default function RootLayout({
       </head>
       <body>
         <nav className="site-nav">
-          <a
-            href="https://github.com/sylphisus/Constello"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Repo
-          </a>
-          <a href="https://docs.constello.xyz">Docs</a>
           <a href="/sky">Sky</a>
-          <a href="/connections">Connections</a>
+          <ConnectionsDrawer />
         </nav>
         {children}
       </body>

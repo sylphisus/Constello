@@ -101,7 +101,8 @@ export default function Sky({
 }
 
 // Reach out to a selected star's constellation: request to see them (shares yours
-// first) or just share yours. One outcome line; the owner acts from /connections.
+// first) or just share yours. One outcome line; the owner acts from the
+// Connections sidebar.
 function ReachOut({ targetId }: { targetId: string }) {
   const [state, setState] = useState<"idle" | "busy" | "requested" | "shared" | "error">("idle");
 

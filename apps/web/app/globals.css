@@ -65,6 +65,70 @@ body {
   color: var(--ink-soft);
   border-bottom-color: var(--hair-strong);
 }
+/* Connections is a button (opens the drawer) but reads as a nav link. */
+.site-nav button {
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  background: none;
+  border: none;
+  border-bottom: 1px solid transparent;
+  padding: 0 0 2px;
+  cursor: pointer;
+}
+.site-nav button:hover {
+  color: var(--ink-soft);
+  border-bottom-color: var(--hair-strong);
+}
+
+/* ── connections drawer ────────────────────────────────────────────────── */
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(7, 9, 15, 0.55);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease;
+  z-index: 40;
+}
+.drawer-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: min(380px, 90vw);
+  background: var(--bg-soft);
+  border-left: 1px solid var(--hair-strong);
+  box-shadow: -24px 0 60px rgba(0, 0, 0, 0.35);
+  padding: 30px 28px 48px;
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 50;
+}
+.drawer.open {
+  transform: translateX(0);
+}
+.drawer-close {
+  position: absolute;
+  top: 22px;
+  right: 22px;
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.drawer-close:hover {
+  color: var(--ink-soft);
+}
 
 /* ── wordmark ──────────────────────────────────────────────────────────── */
 .mark h1 {
@@ -518,6 +582,31 @@ a.ghost-btn {
   border-radius: 8px;
 }
 
+/* ── collected X / Twitter timelines (inline embed) ────────────────────── */
+/* X's timeline embed renders its own dark iframe (data-theme="dark"); give the
+   frame the same outlined surface as the reading cards so it reads as a
+   collected artifact. The note carries the sign-in + browser caveat and the
+   always-present "View on X" link — the floor when the timeline stays blank. */
+.twitter-timeline-embed {
+  margin: 18px 0 6px;
+}
+.twitter-embed-frame {
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.twitter-note {
+  margin: 10px 2px 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+.twitter-note a {
+  color: var(--gold);
+  border-bottom: 1px dotted var(--gold);
+  white-space: nowrap;
+}
+
 /* ── the essence synthesis ─────────────────────────────────────────────── */
 .essence-block {
   margin-top: 60px;
@@ -534,6 +623,48 @@ a.ghost-btn {
 
 .section-gap {
   margin-top: 40px;
+}
+
+/* ── on-platform chat (talk to your reading) ─────────────────────────────── */
+.chat-block {
+  margin-top: 56px;
+  border-top: 1px solid var(--hair);
+  padding-top: 30px;
+}
+.chat-eyebrow {
+  font-size: 10.5px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--red);
+  margin-bottom: 18px;
+}
+.chat-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.chat-msg {
+  max-width: 82%;
+  padding: 12px 15px;
+  border-radius: 14px;
+  font-size: 14.5px;
+  line-height: 1.62;
+  white-space: pre-wrap;
+}
+.chat-user {
+  align-self: flex-end;
+  background: var(--field-bg);
+  border: 1px solid var(--hair-strong);
+  color: var(--ink-soft);
+}
+.chat-assistant {
+  align-self: flex-start;
+  border: 1px solid var(--hair);
+  color: var(--ink);
+}
+.chat-pending {
+  align-self: flex-start;
 }
 
 /* ── source tabs + handle field (Last.fm / X imports) ───────────────────── */

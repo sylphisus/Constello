@@ -63,7 +63,7 @@ export async function notifyReadingReady(args: {
 // A connection event for the recipient: someone shared with them ('share') or
 // asked to see them ('request'). `ref` is the *other* constellation's id, so the
 // (contact, kind, ref) idempotency key is once-per-other-party. The link goes to
-// the recipient's own constellation, from which they reach /connections.
+// the recipient's own constellation, from which they open the Connections sidebar.
 export async function notifyConnection(args: {
   recipientId: string;
   kind: "share" | "request";
