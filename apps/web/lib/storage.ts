@@ -57,7 +57,12 @@ export async function uploadImage(
     // A Uint8Array is a valid BufferSource body; the cast sidesteps a TS lib
     // mismatch over ArrayBuffer generics.
     body: body as BodyInit,
-    headers: { "content-type": contentType },
+    // R2's S3 API rejects chunked uploads (411 Length Required). Next.js's
+    // patched fetch reconstructs the request and drops the known body length,
+    // so the PUT would otherwise go out Transfer-Encoding: chunked. Set the
+    // length explicitly to force a fixed-length request. (content-length is in
+    // aws4fetch's UNSIGNABLE_HEADERS, so this doesn't affect the SigV4 signature.)
+    headers: { "content-type": contentType, "content-length": String(body.byteLength) },
   });
   if (!res.ok) {
     throw new Error(`R2 upload failed (${res.status}).`);
