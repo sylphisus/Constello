@@ -39,6 +39,7 @@ const NODE_READING_INSTRUCTIONS: Record<EntrySource, string> = {
   pinterest: ``,
   spotify: ``,
   obsidian: ``,
+  "apple-notes": ``,
   "google-docs": ``,
   notion: ``,
   images: ``,

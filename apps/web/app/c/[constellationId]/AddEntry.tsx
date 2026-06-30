@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import GoogleDocsButton from "@/components/GoogleDocsButton";
 import ObsidianButton from "@/components/ObsidianButton";
+import AppleNotes from "@/components/AppleNotes";
 
 // Add another collection to an existing constellation. Sources:
 //   - text:        paste / upload writing          → /api/submit
@@ -14,6 +15,7 @@ import ObsidianButton from "@/components/ObsidianButton";
 //   - notion:      connect (OAuth) databases        → /api/auth/notion
 //   - google-docs: pick a doc (Google Picker)       → /api/collections/google-docs
 //   - obsidian:    upload a vault folder            → /api/collections/obsidian
+//   - apple-notes: recreate notes in a Notes editor → /api/collections/apple-notes
 //   - images:      upload any images (≤10)          → /api/collections/images
 // All are stored pending; the reading is fulfilled by hand later. No title
 // field — a title, if any, lives inside the piece.
@@ -27,10 +29,11 @@ type Mode =
   | "spotify"
   | "notion"
   | "google-docs"
-  | "obsidian";
+  | "obsidian"
+  | "apple-notes";
 
 const MODES: Mode[] = [
-  "text", "images", "lastfm", "twitter", "pinterest", "spotify", "notion", "google-docs", "obsidian",
+  "text", "images", "lastfm", "twitter", "pinterest", "spotify", "notion", "google-docs", "obsidian", "apple-notes",
 ];
 
 // Sources that round-trip through an OAuth consent page instead of posting a
@@ -47,6 +50,7 @@ const labels: Record<Mode, string> = {
   notion: "Notion",
   "google-docs": "Google Docs",
   obsidian: "Obsidian",
+  "apple-notes": "Apple Notes",
 };
 
 export default function AddEntry({ constellationId }: { constellationId: string }) {
@@ -221,6 +225,10 @@ export default function AddEntry({ constellationId }: { constellationId: string 
         ))}
       </div>
 
+      {mode === "apple-notes" ? (
+        <AppleNotes constellationId={constellationId} onCancel={() => setOpen(false)} />
+      ) : (
+      <>
       {mode === "text" ? (
         <>
           <textarea
@@ -363,6 +371,8 @@ export default function AddEntry({ constellationId }: { constellationId: string 
         </button>
       </div>
       {error && <p className="error">{error}</p>}
+      </>
+      )}
     </div>
   );
 }

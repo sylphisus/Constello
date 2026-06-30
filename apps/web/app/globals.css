@@ -539,6 +539,7 @@ a.ghost-btn {
 /* ── source tabs + handle field (Last.fm / X imports) ───────────────────── */
 .mode-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 16px;
 }
@@ -579,6 +580,148 @@ a.ghost-btn {
 .handle-input:focus {
   outline: none;
   border-color: var(--hair-strong);
+}
+
+/* ── Apple Notes composer (apple-notes collection) ───────────────────────── */
+.an-app {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  min-height: 300px;
+  margin-top: 14px;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg-soft);
+}
+.an-sidebar {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-right: 1px solid var(--hair);
+  background: rgba(0, 0, 0, 0.16);
+}
+.an-sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--hair);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.an-compose {
+  background: none;
+  border: none;
+  color: var(--gold);
+  font-size: 15px;
+  line-height: 1;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+.an-compose:hover {
+  color: #fff;
+}
+.an-list {
+  flex: 1;
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.an-list li {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+.an-row {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 7px;
+  padding: 9px 10px;
+  cursor: pointer;
+}
+.an-row:hover {
+  background: var(--field-bg);
+}
+.an-row[aria-pressed="true"] {
+  background: rgba(241, 196, 122, 0.14);
+}
+.an-row-title {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.an-row-snippet {
+  color: var(--ink-faint);
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.an-del {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  font-size: 11px;
+  padding: 2px 4px;
+  cursor: pointer;
+  opacity: 0;
+}
+.an-list li:hover .an-del {
+  opacity: 1;
+}
+.an-del:hover {
+  color: var(--red);
+}
+.an-editor {
+  display: flex;
+  min-width: 0;
+}
+.an-text {
+  flex: 1;
+  width: 100%;
+  resize: none;
+  background: none;
+  border: none;
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.65;
+  padding: 18px 20px;
+  caret-color: var(--gold);
+}
+.an-text:focus {
+  outline: none;
+}
+.an-text::placeholder {
+  color: var(--ink-faint);
+}
+@media (max-width: 560px) {
+  .an-app {
+    grid-template-columns: 1fr;
+  }
+  .an-sidebar {
+    max-height: 170px;
+    border-right: none;
+    border-bottom: 1px solid var(--hair);
+  }
 }
 
 .note {

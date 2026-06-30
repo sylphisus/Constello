@@ -49,6 +49,7 @@ export type EntrySource =
   | "pinterest"
   | "spotify"
   | "obsidian"
+  | "apple-notes"
   | "google-docs"
   | "notion"
   | "images";
