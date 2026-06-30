@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
 
-  const url = normalizeBoardUrl(body.url ?? "");
+  const url = await resolveBoardUrl(body.url ?? "");
   if (!url) {
     return NextResponse.json({ error: "A valid Pinterest board URL is required." }, { status: 400 });
   }
@@ -45,14 +45,31 @@ export async function POST(req: Request) {
   });
 }
 
+// Accept either a full pinterest.com board URL or a pin.it short link — what
+// Pinterest's "Copy link" / share button hands you. A short link is opaque (its
+// path is a code, not user/board), so we follow its redirect server-side to the
+// real board URL, then normalize that. Returns null if it isn't a board.
+async function resolveBoardUrl(raw: string): Promise<string | null> {
+  const direct = normalizeBoardUrl(raw);
+  if (direct) return direct;
+  if (!isPinIt(raw)) return null;
+  try {
+    const res = await fetch(withScheme(raw), {
+      redirect: "follow",
+      signal: AbortSignal.timeout(8000),
+    });
+    return normalizeBoardUrl(res.url); // strips the invite_code/sender tracking params
+  } catch {
+    return null;
+  }
+}
+
 // Accept what someone would paste (with or without scheme/www, trailing slash,
 // query/hash) and reduce it to a clean board URL; reject non-Pinterest hosts.
 function normalizeBoardUrl(raw: string): string | null {
-  let s = raw.trim();
-  if (!s) return null;
-  if (!/^https?:\/\//i.test(s)) s = `https://${s}`;
+  if (!raw.trim()) return null;
   try {
-    const u = new URL(s);
+    const u = new URL(withScheme(raw));
     if (!/(^|\.)pinterest\.[a-z.]+$/i.test(u.hostname)) return null;
     const path = u.pathname.replace(/^\/+|\/+$/g, "");
     if (!path) return null; // a board needs a user/board path, not the bare host
@@ -60,4 +77,17 @@ function normalizeBoardUrl(raw: string): string | null {
   } catch {
     return null;
   }
+}
+
+function isPinIt(raw: string): boolean {
+  try {
+    return new URL(withScheme(raw)).hostname.toLowerCase() === "pin.it";
+  } catch {
+    return false;
+  }
+}
+
+function withScheme(raw: string): string {
+  const s = raw.trim();
+  return /^https?:\/\//i.test(s) ? s : `https://${s}`;
 }
