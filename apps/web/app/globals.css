@@ -115,20 +115,6 @@ body {
 .drawer.open {
   transform: translateX(0);
 }
-.drawer-close {
-  position: absolute;
-  top: 22px;
-  right: 22px;
-  background: none;
-  border: none;
-  color: var(--ink-faint);
-  font-size: 15px;
-  line-height: 1;
-  cursor: pointer;
-}
-.drawer-close:hover {
-  color: var(--ink-soft);
-}
 
 /* ── wordmark ──────────────────────────────────────────────────────────── */
 .mark h1 {

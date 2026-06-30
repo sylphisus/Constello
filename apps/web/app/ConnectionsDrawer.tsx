@@ -56,9 +56,6 @@ export default function ConnectionsDrawer() {
         onClick={() => setOpen(false)}
       />
       <aside className={`drawer${open ? " open" : ""}`} aria-hidden={!open}>
-        <button className="drawer-close" onClick={() => setOpen(false)} aria-label="close">
-          ✕
-        </button>
         <div className="mark">
           <h1>Connections</h1>
           <p>who can see you · who you can see</p>
