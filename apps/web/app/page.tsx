@@ -11,7 +11,7 @@ import ObsidianButton from "@/components/ObsidianButton";
 //   - text:        paste / upload writing        → /api/submit
 //   - lastfm:      a Last.fm username            → /api/collections/lastfm
 //   - twitter:     an X / Twitter handle         → /api/collections/twitter
-//   - pinterest:   connect (OAuth) their boards  → /api/auth/pinterest
+//   - pinterest:   paste a public board URL      → /api/collections/pinterest
 //   - spotify:     connect (OAuth) their library → /api/auth/spotify
 //   - notion:      connect (OAuth) databases     → /api/auth/notion
 //   - google-docs: pick a doc (Google Picker)    → /api/collections/google-docs
@@ -35,7 +35,7 @@ const MODES: Mode[] = [
 
 // Sources that round-trip through an OAuth consent page instead of posting a
 // handle/body inline.
-const isConnect = (m: Mode) => m === "pinterest" || m === "spotify" || m === "notion";
+const isConnect = (m: Mode) => m === "spotify" || m === "notion";
 
 const labels: Record<Mode, string> = {
   text: "Text",
@@ -63,7 +63,7 @@ export default function Home() {
   // session, etc.).
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    for (const m of ["pinterest", "spotify", "notion"] as const) {
+    for (const m of ["spotify", "notion"] as const) {
       const err = params.get(`${m}Error`);
       if (err) {
         setMode(m);
@@ -114,7 +114,9 @@ export default function Home() {
           ? { rawText }
           : mode === "lastfm"
             ? { username: handle }
-            : { handle };
+            : mode === "pinterest"
+              ? { url: handle }
+              : { handle };
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -196,10 +198,20 @@ export default function Home() {
           </div>
         </>
       ) : mode === "pinterest" ? (
-        <p className="framing">
-          Connect Pinterest to read the worlds in your boards — what you kept, and
-          why these and not others. Only your public boards are read.
-        </p>
+        <>
+          <p className="framing">
+            Paste a link to a public Pinterest board to read the world in it —
+            what you kept, and why these and not others. Only public boards can
+            be read.
+          </p>
+          <input
+            className="handle-input"
+            placeholder="pinterest.com/you/your-board"
+            value={handle}
+            onChange={(e) => setHandle(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && begin()}
+          />
+        </>
       ) : mode === "spotify" ? (
         <p className="framing">
           Connect Spotify to read what you listen to — your playlists, top

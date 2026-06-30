@@ -9,7 +9,7 @@ import ObsidianButton from "@/components/ObsidianButton";
 //   - text:        paste / upload writing          → /api/submit
 //   - lastfm:      a Last.fm username (listening)   → /api/collections/lastfm
 //   - twitter:     an X / Twitter handle (posting)  → /api/collections/twitter
-//   - pinterest:   connect (OAuth) their boards     → /api/auth/pinterest
+//   - pinterest:   paste a public board URL         → /api/collections/pinterest
 //   - spotify:     connect (OAuth) their library    → /api/auth/spotify
 //   - notion:      connect (OAuth) databases        → /api/auth/notion
 //   - google-docs: pick a doc (Google Picker)       → /api/collections/google-docs
@@ -35,7 +35,7 @@ const MODES: Mode[] = [
 
 // Sources that round-trip through an OAuth consent page instead of posting a
 // handle/body inline.
-const isConnect = (m: Mode) => m === "pinterest" || m === "spotify" || m === "notion";
+const isConnect = (m: Mode) => m === "spotify" || m === "notion";
 
 const labels: Record<Mode, string> = {
   text: "Text",
@@ -104,7 +104,9 @@ export default function AddEntry({ constellationId }: { constellationId: string 
           ? { constellationId, rawText }
           : mode === "lastfm"
             ? { constellationId, username: handle }
-            : { constellationId, handle };
+            : mode === "pinterest"
+              ? { constellationId, url: handle }
+              : { constellationId, handle };
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -195,10 +197,19 @@ export default function AddEntry({ constellationId }: { constellationId: string 
           </div>
         </>
       ) : mode === "pinterest" ? (
-        <p className="framing">
-          Connect Pinterest to add the worlds in your boards. Only your public
-          boards are read.
-        </p>
+        <>
+          <p className="framing">
+            Paste a link to a public Pinterest board to add the world in it.
+            Only public boards can be read.
+          </p>
+          <input
+            className="handle-input"
+            placeholder="pinterest.com/you/your-board"
+            value={handle}
+            onChange={(e) => setHandle(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && add()}
+          />
+        </>
       ) : mode === "spotify" ? (
         <p className="framing">
           Connect Spotify to add what you listen to — your playlists, top
