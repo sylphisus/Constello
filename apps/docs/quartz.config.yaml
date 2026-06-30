@@ -134,6 +134,17 @@ plugins:
       priority: 50
   - source: github:quartz-community/graph
     enabled: true
+    # Stronger centering + weaker repulsion so the orphan docs (no wikilinks,
+    # only ever tied in via the now-excluded INDEX hub) stay in frame instead
+    # of being flung to the edges. Adds no links — purely layout.
+    options:
+      localGraph:
+        centerForce: 0.5
+        repelForce: 0.3
+      globalGraph:
+        centerForce: 0.5
+        repelForce: 0.3
+        linkDistance: 40
     layout:
       position: right
       priority: 10
