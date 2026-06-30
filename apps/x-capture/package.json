@@ -1,0 +1,17 @@
+{
+  "name": "constello-x-capture",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local tool: scroll-captures a public X/Twitter profile into a sequence of screenshots for a by-hand reading. Raw text (the constello-x gallery-dl path) flattens a feed and misses the imagery/layout that *is* a timeline; the screenshots are what the read is drawn from.",
+  "main": "capture-box.mjs",
+  "scripts": {
+    "start": "node capture-box.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "playwright-core": "^1.49.0"
+  }
+}
