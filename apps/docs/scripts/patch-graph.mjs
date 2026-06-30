@@ -22,11 +22,16 @@ const PLUGIN_DIR = ".quartz/plugins/graph/dist"
 // Quartz actually bundles, dist/index.js is patched too for consistency.
 const TARGETS = ["index.js", "components/index.js"]
 
+// Match the RAW contentIndex key (Ju), not the simplified slug Fu(Ju): the home
+// page's key is "index" but Fu("index") returns "/" (root), so a post-simplify
+// check never catches it and INDEX renders as the 11-edge hub. The raw keys are
+// literally "index"/"core". Nothing links *into* either, so dropping both from
+// the data map removes them and all their edges with no orphan leftovers.
 const FIND = "for(var Ju in Ku)eu.set(Fu(Ju),Ku[Ju])"
 const REPLACE =
-  'for(var Ju in Ku){var __qz=Fu(Ju);if(__qz==="index"||__qz==="core")continue;eu.set(__qz,Ku[Ju])}'
+  'for(var Ju in Ku){if(Ju==="index"||Ju==="core")continue;eu.set(Fu(Ju),Ku[Ju])}'
 // Marker proving the patch is present (covers already-patched re-runs).
-const MARKER = '__qz==="index"||__qz==="core"'
+const MARKER = 'if(Ju==="index"||Ju==="core")continue'
 
 let patchedAny = false
 
