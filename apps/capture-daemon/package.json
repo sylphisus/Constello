@@ -1,0 +1,14 @@
+{
+  "name": "constello-capture-daemon",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Loopback bridge so the admin console can run a capture (Pinterest screenshot / X text bridge) with one click instead of pasting a command.",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

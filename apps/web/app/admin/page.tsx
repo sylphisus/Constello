@@ -444,14 +444,20 @@ function PendingCard({
               ? "Fill from X — run locally, then Refresh:"
               : "Re-pull from X (run locally, then Refresh):"}
           </p>
-          <BridgeBlock command={bridgeCommand(handle, entry.constellation_id, password)} />
+          <BridgeBlock
+            command={bridgeCommand(handle, entry.constellation_id, password)}
+            run={{
+              kind: "x-bridge",
+              params: { handle, constellationId: entry.constellation_id, adminPassword: password },
+            }}
+          />
         </div>
       )}
 
       {isPinCapture && boardUrl && (
         <div style={{ marginTop: 10 }}>
           <p style={hint}>Capture the board locally (screenshots open when it finishes):</p>
-          <BridgeBlock command={captureCommand(boardUrl)} />
+          <BridgeBlock command={captureCommand(boardUrl)} run={{ kind: "pinterest", params: { boardUrl } }} />
         </div>
       )}
 
@@ -529,12 +535,61 @@ function PendingCard({
 
 // A ready-to-paste local command + a copy button. The scrape stays off-platform,
 // so fulfillment is "copy → run in your terminal → Refresh", never a prod scrape.
-function BridgeBlock({ command }: { command: string }) {
+function BridgeBlock({
+  command,
+  run,
+}: {
+  command: string;
+  run?: { kind: "pinterest" | "x-bridge"; params: Record<string, string> };
+}) {
   return (
     <div>
       <pre style={cmd}>{command}</pre>
-      <CopyButton text={command} label="Copy command" />
+      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+        {run && <RunButton kind={run.kind} params={run.params} />}
+        <CopyButton text={command} label="Copy command" />
+      </div>
     </div>
+  );
+}
+
+// One-click run via the local capture-daemon (apps/capture-daemon, :4599). It runs
+// the same command the block shows; we fall back to Copy when the daemon isn't up
+// or the browser blocks the loopback call (Safari/Firefox — Chrome/Edge allow it).
+const DAEMON = "http://127.0.0.1:4599";
+function RunButton({ kind, params }: { kind: "pinterest" | "x-bridge"; params: Record<string, string> }) {
+  const [state, setState] = useState<"idle" | "running" | "ok" | "err">("idle");
+  const [msg, setMsg] = useState("");
+  async function go() {
+    setState("running");
+    setMsg("");
+    try {
+      const res = await fetch(`${DAEMON}/${kind}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Daemon error.");
+      setState("ok");
+      setMsg("Started — watch the capture-daemon's terminal.");
+      setTimeout(() => setState("idle"), 4000);
+    } catch {
+      setState("err");
+      setMsg("No capture-daemon on :4599 — run `npm start` in apps/capture-daemon (Chrome/Edge), or copy the command.");
+    }
+  }
+  return (
+    <>
+      <button onClick={go} disabled={state === "running"} style={runBtn}>
+        {state === "running" ? "Starting…" : state === "ok" ? "Started ✓" : "▶ Run on this machine"}
+      </button>
+      {msg && (
+        <p style={{ ...hint, width: "100%", color: state === "err" ? "var(--red)" : "var(--ink-faint)" }}>
+          {msg}
+        </p>
+      )}
+    </>
   );
 }
 
@@ -612,7 +667,13 @@ function XQueue({ onQueued, password }: { onQueued: () => void; password: string
             Queued <strong>@{queued.handle}</strong> → <Cid id={queued.constellationId} />. Run
             locally to fill it, then Refresh:
           </p>
-          <BridgeBlock command={bridgeCommand(queued.handle, queued.constellationId, password)} />
+          <BridgeBlock
+            command={bridgeCommand(queued.handle, queued.constellationId, password)}
+            run={{
+              kind: "x-bridge",
+              params: { handle: queued.handle, constellationId: queued.constellationId, adminPassword: password },
+            }}
+          />
         </div>
       )}
     </section>
@@ -673,7 +734,7 @@ function PinterestQueue({ onQueued }: { onQueued: () => void }) {
             Queued → <Cid id={queued.constellationId} />. Capture locally, then drag the
             screenshots into claude.ai with &ldquo;{PROMPT}&rdquo; and Refresh:
           </p>
-          <BridgeBlock command={captureCommand(queued.url)} />
+          <BridgeBlock command={captureCommand(queued.url)} run={{ kind: "pinterest", params: { boardUrl: queued.url } }} />
         </div>
       )}
     </section>
@@ -1159,4 +1220,14 @@ const ghostBtn: CSSProperties = {
   border: "1px solid var(--hair-strong)",
   borderRadius: 7,
   fontSize: 12,
+};
+const runBtn: CSSProperties = {
+  padding: "6px 14px",
+  cursor: "pointer",
+  background: "var(--gold)",
+  color: "var(--bg)",
+  border: "none",
+  borderRadius: 7,
+  fontSize: 12,
+  fontWeight: 600,
 };
