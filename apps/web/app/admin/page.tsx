@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { X_HANDLE } from "@/lib/brand";
+import { READING_PROMPT } from "@/lib/prompts";
 
 // Fulfillment console (gated by Basic auth in middleware). Three views:
 //  - a stats bar + roster of every constellation (the whole population),
@@ -63,7 +64,9 @@ interface Conversation {
   contextText: string;
 }
 
-const PROMPT = "Conduct a personal analysis of this.";
+// Shared with the automated reading path so the manual and automated prompts
+// can't drift (see lib/prompts).
+const PROMPT = READING_PROMPT;
 
 // Where the off-platform X bridge lives (the scrape stays local; prod never
 // holds a cookie). Used to print a ready-to-paste fulfillment command.
@@ -88,6 +91,15 @@ function captureCommand(boardUrl: string): string {
 
 // Recover the board URL from a queued Pinterest entry's placeholder body.
 function pinBoardUrl(rawText: string): string | null {
+  return rawText.match(/https?:\/\/\S+/)?.[0] ?? null;
+}
+
+// A queued Spotify link carries this placeholder body (see
+// /api/collections/spotify); the canonical link is appended after "Link: ". It's
+// read from the inline embed on the constellation page (or screenshots), so the
+// material is the embed — the prompt goes to claude.ai alone, like a board.
+const SPOTIFY_PLACEHOLDER_PREFIX = "Pending Spotify capture";
+function spotifyLink(rawText: string): string | null {
   return rawText.match(/https?:\/\/\S+/)?.[0] ?? null;
 }
 
@@ -356,18 +368,23 @@ function PendingCard({
 
   // What this entry is, by source. A queued X handle is filled off-platform by the
   // bridge; a queued Pinterest board is read from screenshots (the images ARE the
-  // material, so the prompt goes to claude.ai alone). Older OAuth-imported pinterest
-  // entries and every other source read from their raw_text as usual.
+  // material, so the prompt goes to claude.ai alone). Every other source reads from
+  // its raw_text as usual.
   const handle = entry.source === "twitter" ? xHandle(entry.label) : null;
   const awaitingCapture =
     entry.source === "twitter" && entry.raw_text.startsWith(X_PLACEHOLDER_PREFIX);
   const isPinCapture =
     entry.source === "pinterest" && entry.raw_text.startsWith(PIN_PLACEHOLDER_PREFIX);
   const boardUrl = isPinCapture ? pinBoardUrl(entry.raw_text) : null;
+  // A queued Spotify link is read from its inline embed (or screenshots), like a
+  // board — the material is the embed, so the prompt goes to claude.ai alone.
+  const isSpotifyCapture =
+    entry.source === "spotify" && entry.raw_text.startsWith(SPOTIFY_PLACEHOLDER_PREFIX);
+  const spotifyUrl = isSpotifyCapture ? spotifyLink(entry.raw_text) : null;
   // An image collection's material is the images themselves (like a Pinterest
   // capture) — the prompt goes to claude.ai alongside the dragged-in images.
   const isImages = entry.source === "images";
-  const dragMaterial = isPinCapture || isImages;
+  const dragMaterial = isPinCapture || isImages || isSpotifyCapture;
   const copyText = dragMaterial ? PROMPT : `${PROMPT}\n\n${entry.raw_text}`;
 
   async function save() {
@@ -438,6 +455,20 @@ function PendingCard({
         </div>
       )}
 
+      {isSpotifyCapture && spotifyUrl && (
+        <div style={{ marginTop: 10 }}>
+          <p style={hint}>Read it from the inline embed on the constellation page, or open it:</p>
+          <a
+            href={spotifyUrl}
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: "var(--essence)", wordBreak: "break-all" }}
+          >
+            {spotifyUrl}
+          </a>
+        </div>
+      )}
+
       {isImages && (
         <div style={{ marginTop: 10 }}>
           {entry.needs_reread && (
@@ -469,7 +500,9 @@ function PendingCard({
               ? "Drag the images above into claude.ai with this prompt:"
               : isPinCapture
                 ? "Drag the screenshots into claude.ai with this prompt:"
-                : "Copy into claude.ai:"}
+                : isSpotifyCapture
+                  ? "Read the embed (or drag screenshots) into claude.ai with this prompt:"
+                  : "Copy into claude.ai:"}
           </p>
           <textarea
             readOnly

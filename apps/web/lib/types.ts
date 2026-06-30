@@ -14,7 +14,7 @@ export interface Node {
   submissionId: string;
   /** User label, or a short title the model generated when no label was given. */
   title: string;
-  /** 200–500 token reading, per the §6.5 reading prompt. */
+  /** Reading text. Superseded by the free-form markdown Reading.artifact below. */
   reading: string;
 }
 

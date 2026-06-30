@@ -12,7 +12,7 @@ import ObsidianButton from "@/components/ObsidianButton";
 //   - lastfm:      a Last.fm username            → /api/collections/lastfm
 //   - twitter:     an X / Twitter handle         → /api/collections/twitter
 //   - pinterest:   paste a public board URL      → /api/collections/pinterest
-//   - spotify:     connect (OAuth) their library → /api/auth/spotify
+//   - spotify:     paste a playlist link OR upload screenshots → /api/collections/spotify · /api/collections/images
 //   - notion:      connect (OAuth) databases     → /api/auth/notion
 //   - google-docs: pick a doc (Google Picker)    → /api/collections/google-docs
 //   - obsidian:    upload a vault folder         → /api/collections/obsidian
@@ -35,7 +35,7 @@ const MODES: Mode[] = [
 
 // Sources that round-trip through an OAuth consent page instead of posting a
 // handle/body inline.
-const isConnect = (m: Mode) => m === "spotify" || m === "notion";
+const isConnect = (m: Mode) => m === "notion";
 
 const labels: Record<Mode, string> = {
   text: "Text",
@@ -58,12 +58,11 @@ export default function Home() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  // The OAuth connect flows round-trip through the provider and land back here
-  // with ?pinterestError / ?spotifyError on failure (declined consent, expired
-  // session, etc.).
+  // The Notion connect flow round-trips through the provider and lands back here
+  // with ?notionError on failure (declined consent, expired session, etc.).
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    for (const m of ["spotify", "notion"] as const) {
+    for (const m of ["notion"] as const) {
       const err = params.get(`${m}Error`);
       if (err) {
         setMode(m);
@@ -75,11 +74,62 @@ export default function Home() {
   }, []);
 
   const ready =
-    mode === "text" ? rawText.trim() : mode === "images" ? files.length : handle.trim();
+    mode === "text"
+      ? rawText.trim()
+      : mode === "images"
+        ? files.length
+        : mode === "spotify"
+          ? files.length || handle.trim()
+          : handle.trim();
 
   async function onFile(file: File | undefined) {
     if (!file) return;
     setRawText(await file.text());
+  }
+
+  // Spotify is two ways in: a pasted public playlist/album link (an inline embed,
+  // read by hand) or uploaded screenshots — Receiptify's receipt of your taste,
+  // or your playlists. Screenshots take the image pipeline (labeled as Spotify);
+  // a link takes the spotify route.
+  async function beginSpotify() {
+    if (busy) return;
+    if (files.length) {
+      if (files.length > 10) {
+        setError("Up to 10 images at a time.");
+        return;
+      }
+      setBusy(true);
+      setError("");
+      try {
+        const body = new FormData();
+        for (const f of files) body.append("images", f);
+        body.append("label", "Spotify · screenshots");
+        const res = await fetch("/api/collections/images", { method: "POST", body });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error ?? "Something went wrong.");
+        router.push(`/c/${data.constellationId}`);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Something went wrong.");
+        setBusy(false);
+      }
+      return;
+    }
+    if (!handle.trim()) return;
+    setBusy(true);
+    setError("");
+    try {
+      const res = await fetch("/api/collections/spotify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: handle }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Something went wrong.");
+      router.push(`/c/${data.constellationId}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setBusy(false);
+    }
   }
 
   async function beginImages() {
@@ -213,10 +263,37 @@ export default function Home() {
           />
         </>
       ) : mode === "spotify" ? (
-        <p className="framing">
-          Connect Spotify to read what you listen to — your playlists, top
-          artists, and saved music. Read once, never stored.
-        </p>
+        <>
+          <p className="framing">
+            Add what you listen to as a screenshot. Paste a public Spotify
+            playlist or album link, or drop a screenshot of your taste — make one
+            at{" "}
+            <a href="https://receiptify.herokuapp.com/" target="_blank" rel="noreferrer">
+              Receiptify
+            </a>{" "}
+            (your top tracks as a receipt), or screenshot your playlists.
+          </p>
+          <input
+            className="handle-input"
+            placeholder="open.spotify.com/playlist/…"
+            value={handle}
+            onChange={(e) => setHandle(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && beginSpotify()}
+          />
+          <div className="piece-row">
+            <label className="file-label">
+              {files.length
+                ? `${files.length} selected — choose again to change`
+                : "or choose screenshots"}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                multiple
+                onChange={(e) => setFiles(e.target.files ? Array.from(e.target.files) : [])}
+              />
+            </label>
+          </div>
+        </>
       ) : mode === "notion" ? (
         <p className="framing">
           Connect Notion and choose which databases to share — what you decided
@@ -256,6 +333,10 @@ export default function Home() {
           <GoogleDocsButton />
         ) : mode === "obsidian" ? (
           <ObsidianButton />
+        ) : mode === "spotify" ? (
+          <button className="primary-btn" disabled={!ready || busy} onClick={beginSpotify}>
+            {busy ? "Beginning…" : "Begin"}
+          </button>
         ) : mode === "images" ? (
           <button className="primary-btn" disabled={!ready || busy} onClick={beginImages}>
             {busy ? "Beginning…" : "Begin"}

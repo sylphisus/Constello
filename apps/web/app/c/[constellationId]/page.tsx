@@ -14,6 +14,7 @@ import PasswordGate from "./PasswordGate";
 import ReadingFrame from "./ReadingFrame";
 import ImageCollection, { type ColImage } from "./ImageCollection";
 import PinterestBoard from "./PinterestBoard";
+import SpotifyEmbed from "./SpotifyEmbed";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic"; // pending → fulfilled should always be fresh
@@ -31,6 +32,24 @@ function pinterestBoardUrl(rawText: string | null): string | null {
     const path = u.pathname.replace(/^\/+|\/+$/g, "");
     if (!path) return null;
     return `https://www.pinterest.com/${path}/`;
+  } catch {
+    return null;
+  }
+}
+
+// The Spotify link flow stores the canonical link in raw_text ("… Link: <url>").
+// Pull it back out and turn it into the embeddable iframe URL (theme=0 = dark).
+// Null when the entry isn't a pasted link (e.g. a Receiptify upload, which takes
+// the image path and renders as an image collection, not an embed).
+function spotifyEmbedUrl(rawText: string | null): string | null {
+  const m = /Link:\s*(https?:\/\/\S+)/i.exec(rawText ?? "");
+  if (!m) return null;
+  try {
+    const u = new URL(m[1]);
+    if (!/(^|\.)spotify\.com$/i.test(u.hostname)) return null;
+    const [type, id] = u.pathname.split("/").filter(Boolean);
+    if (!type || !id) return null;
+    return `https://open.spotify.com/embed/${type}/${id}?theme=0`;
   } catch {
     return null;
   }
@@ -224,6 +243,7 @@ export default async function ConstellationPage({
         const artifact = readingByEntry.get(e.id);
         const isImages = e.source === "images";
         const boardUrl = e.source === "pinterest" ? pinterestBoardUrl(e.raw_text) : null;
+        const spotifyEmbed = e.source === "spotify" ? spotifyEmbedUrl(e.raw_text) : null;
         return (
           <article className="reading-card" key={e.id}>
             {e.label && <p className="essence-eyebrow">{e.label}</p>}
@@ -236,6 +256,7 @@ export default async function ConstellationPage({
               />
             )}
             {boardUrl && <PinterestBoard href={boardUrl} />}
+            {spotifyEmbed && <SpotifyEmbed src={spotifyEmbed} />}
             {artifact ? (
               <ReadingFrame doc={buildReadingDoc(artifact)} title={e.label || "reading"} />
             ) : isImages ? null : (

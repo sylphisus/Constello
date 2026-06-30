@@ -1,15 +1,18 @@
 import { NextResponse } from "next/server";
-import { randomUUID } from "node:crypto";
-import { anthropic, MODELS, parseJsonObject, textOf } from "@/lib/anthropic";
+import { anthropic, MODELS, textOf } from "@/lib/anthropic";
 import { nodeReadingMessages } from "@/lib/prompts";
-import { supabase } from "@/lib/supabase";
-import type { Node, TextSubmission } from "@/lib/types";
+import type { EntrySource } from "@/lib/types";
 
 export const runtime = "nodejs";
 
-// POST a single text submission → run the §6.5 reading → return one Node.
+// AUTOMATED reading seed — NOT WIRED. The live alpha fulfils every reading by
+// hand (POST /api/admin/reading stores the pasted markdown + embeds it). This is
+// the future automated twin: given raw material, run the §6.5 reading and return
+// the free-form markdown artifact. Persisting it (a `readings` row keyed to an
+// entry, plus the embed + signature recompute that /api/admin/reading already
+// does) is the remaining API-phase wiring; until then nothing calls this.
 export async function POST(req: Request) {
-  let body: { label?: string; rawText?: string };
+  let body: { label?: string; rawText?: string; source?: EntrySource };
   try {
     body = await req.json();
   } catch {
@@ -18,6 +21,7 @@ export async function POST(req: Request) {
 
   const rawText = (body.rawText ?? "").trim();
   const label = (body.label ?? "").trim();
+  const source = body.source ?? "text";
   if (!rawText) {
     return NextResponse.json(
       { error: "A piece of text is required." },
@@ -25,25 +29,17 @@ export async function POST(req: Request) {
     );
   }
 
-  const submission: TextSubmission = { id: randomUUID(), label, rawText };
-
-  // ── Read the submission (Haiku 4.5) ────────────────────────────────────────
-  let title: string;
-  let reading: string;
   try {
-    const { system, user } = nodeReadingMessages(submission, "text");
+    const { system, user } = nodeReadingMessages({ label, rawText, source });
     const message = await anthropic().messages.create({
       model: MODELS.nodeReading,
       max_tokens: 16000,
       system,
       messages: [{ role: "user", content: user }],
     });
-    const parsed = parseJsonObject<{ title?: string; reading?: string }>(
-      textOf(message),
-    );
-    reading = (parsed.reading ?? "").trim();
-    title = (parsed.title ?? "").trim() || label || "Untitled";
-    if (!reading) throw new Error("Model returned an empty reading.");
+    const artifact = textOf(message);
+    if (!artifact) throw new Error("Model returned an empty reading.");
+    return NextResponse.json({ artifact });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error.";
     const isKey = msg.includes("ANTHROPIC_API_KEY");
@@ -52,30 +48,4 @@ export async function POST(req: Request) {
       { status: isKey ? 400 : 502 },
     );
   }
-
-  const node: Node = { id: randomUUID(), submissionId: submission.id, title, reading };
-
-  // ── Persist (best-effort) ──────────────────────────────────────────────────
-  const db = supabase();
-  let persisted = false;
-  if (db) {
-    const { error: subErr } = await db.from("text_submissions").insert({
-      id: submission.id,
-      label: submission.label,
-      raw_text: submission.rawText,
-    });
-    const { error: nodeErr } = await db.from("nodes").insert({
-      id: node.id,
-      submission_id: node.submissionId,
-      title: node.title,
-      reading: node.reading,
-    });
-    if (subErr || nodeErr) {
-      console.warn("[text] persistence failed:", subErr ?? nodeErr);
-    } else {
-      persisted = true;
-    }
-  }
-
-  return NextResponse.json({ node, submission, persisted });
 }

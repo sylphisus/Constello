@@ -213,6 +213,10 @@ body {
   color: var(--ink);
   font-weight: 500;
 }
+.framing a {
+  color: var(--gold);
+  border-bottom: 1px dotted var(--gold);
+}
 
 .eyebrow {
   font-size: 10.5px;
@@ -464,6 +468,19 @@ a.ghost-btn {
   /* pinit.js injects a fixed-width grid; on a narrow screen let it scroll
      rather than push the page wider. */
   overflow-x: auto;
+}
+
+/* Spotify's official embed iframe is dark by default (theme=0) — it already
+   sits on the gentle-dark ground; just give it the same outlined surface as the
+   reading cards so it reads as a collected artifact, not a bolt-on. */
+.spotify-embed {
+  margin: 18px 0 6px;
+}
+.spotify-embed iframe {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
 }
 
 /* Re-skin Pinterest's embedBoard chrome onto the gentle-dark ground: the pins
