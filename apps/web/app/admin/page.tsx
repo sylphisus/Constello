@@ -201,6 +201,8 @@ export default function Admin() {
 
       {stats && <StatBar stats={stats} />}
 
+      <DaemonStatus />
+
       {loading && firstLoad ? (
         <p style={{ color: "var(--ink-soft)" }}>Loading…</p>
       ) : (
@@ -590,6 +592,47 @@ function RunButton({ kind, params }: { kind: "pinterest" | "x-bridge"; params: R
         </p>
       )}
     </>
+  );
+}
+
+// Top-of-console banner: is the local capture-daemon reachable? The "Run on this
+// machine" buttons need it running. Checks /health on mount; if it's down, shows
+// the one command that starts it (Chrome/Edge only — the buttons post to
+// http://localhost from an https page).
+const DAEMON_START = 'cd ~/"Documents/constello build/apps/capture-daemon" && npm start';
+function DaemonStatus() {
+  const [up, setUp] = useState<boolean | null>(null);
+  async function check() {
+    setUp(null);
+    try {
+      const res = await fetch(`${DAEMON}/health`, { signal: AbortSignal.timeout(1500) });
+      setUp(res.ok);
+    } catch {
+      setUp(false);
+    }
+  }
+  useEffect(() => {
+    check();
+  }, []);
+  return (
+    <div style={daemonBar}>
+      {up === null ? (
+        <span style={dim}>Checking capture-daemon…</span>
+      ) : up ? (
+        <span style={{ color: "var(--gold)" }}>⚡ capture-daemon connected — “Run on this machine” is live.</span>
+      ) : (
+        <>
+          <span style={dim}>
+            capture-daemon not running — start it for one-click captures (Chrome/Edge):
+          </span>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginTop: 7 }}>
+            <pre style={{ ...cmd, margin: 0 }}>{DAEMON_START}</pre>
+            <CopyButton text={DAEMON_START} label="Copy" />
+            <button onClick={check} style={ghostBtn}>Re-check</button>
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -1230,4 +1273,12 @@ const runBtn: CSSProperties = {
   borderRadius: 7,
   fontSize: 12,
   fontWeight: 600,
+};
+const daemonBar: CSSProperties = {
+  margin: "14px 0 4px",
+  padding: "10px 14px",
+  border: "1px solid var(--hair)",
+  borderRadius: 10,
+  background: "var(--field-bg)",
+  fontSize: 12.5,
 };
