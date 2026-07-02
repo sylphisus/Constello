@@ -9,12 +9,14 @@ import { matchSummary, EXACT_MATCH, NEARLY_IDENTICAL } from "@/lib/sky";
 import { canView } from "@/lib/share";
 import { imageUrl } from "@/lib/storage";
 import AddEntry from "./AddEntry";
+import Chat, { type ChatMessage } from "./Chat";
 import NotifyMe from "./NotifyMe";
 import PasswordGate from "./PasswordGate";
 import ReadingFrame from "./ReadingFrame";
 import ImageCollection, { type ColImage } from "./ImageCollection";
 import PinterestBoard from "./PinterestBoard";
 import SpotifyEmbed from "./SpotifyEmbed";
+import TwitterTimeline from "./TwitterTimeline";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic"; // pending → fulfilled should always be fresh
@@ -53,6 +55,14 @@ function spotifyEmbedUrl(rawText: string | null): string | null {
   } catch {
     return null;
   }
+}
+
+// The twitter entry stores the handle in its label ("X · @<handle>"); the local
+// bridge later replaces raw_text with captured posts, but the label persists, so
+// pull the handle from there for the live timeline embed.
+function twitterHandle(label: string | null): string | null {
+  const m = /@(\w{1,15})\b/.exec(label ?? "");
+  return m ? m[1] : null;
 }
 
 // A constellation is reachable by two kinds of link: its uuid (the stable link
@@ -159,6 +169,18 @@ export default async function ConstellationPage({
     .eq("constellation_id", resolvedId)
     .maybeSingle();
 
+  // The owner's chat thread about their own world (readings + essence). Replies
+  // are fulfilled by hand from the admin console (manual alpha), like readings.
+  let chatThread: ChatMessage[] = [];
+  if (isOwner) {
+    const { data: msgs } = await db
+      .from("constellation_messages")
+      .select("id, role, content")
+      .eq("constellation_id", resolvedId)
+      .order("created_at", { ascending: true });
+    chatThread = (msgs ?? []) as ChatMessage[];
+  }
+
   const fulfilled = (entries ?? []).filter((e) => readingByEntry.has(e.id)).length;
   const pending = (entries?.length ?? 0) - fulfilled;
 
@@ -244,6 +266,7 @@ export default async function ConstellationPage({
         const isImages = e.source === "images";
         const boardUrl = e.source === "pinterest" ? pinterestBoardUrl(e.raw_text) : null;
         const spotifyEmbed = e.source === "spotify" ? spotifyEmbedUrl(e.raw_text) : null;
+        const xHandle = e.source === "twitter" ? twitterHandle(e.label) : null;
         return (
           <article className="reading-card" key={e.id}>
             {e.label && <p className="essence-eyebrow">{e.label}</p>}
@@ -257,6 +280,7 @@ export default async function ConstellationPage({
             )}
             {boardUrl && <PinterestBoard href={boardUrl} />}
             {spotifyEmbed && <SpotifyEmbed src={spotifyEmbed} />}
+            {xHandle && <TwitterTimeline handle={xHandle} />}
             {artifact ? (
               <ReadingFrame doc={buildReadingDoc(artifact)} title={e.label || "reading"} />
             ) : isImages ? null : (
@@ -268,6 +292,10 @@ export default async function ConstellationPage({
 
       {isOwner && (
         <>
+          {(fulfilled > 0 || Boolean(essence?.artifact) || chatThread.length > 0) && (
+            <Chat constellationId={resolvedId} thread={chatThread} />
+          )}
+
           <AddEntry constellationId={resolvedId} />
 
           <NotifyMe

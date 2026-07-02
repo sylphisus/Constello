@@ -63,6 +63,15 @@ interface Conversation {
   matches: Match[];
   contextText: string;
 }
+interface ChatQuestion {
+  id: string;
+  constellationId: string;
+  content: string;
+  createdAt: string;
+  hasEssence: boolean;
+  readings: number;
+  contextText: string;
+}
 
 // Shared with the automated reading path so the manual and automated prompts
 // can't drift (see lib/prompts).
@@ -88,6 +97,12 @@ const PIN_PLACEHOLDER_PREFIX = "Pending Pinterest capture";
 function captureCommand(boardUrl: string): string {
   return `cd ${CAPTURE_DIR}\nnpm start -- "${boardUrl}"`;
 }
+
+// One-time sign-in for the capture tool. Opens its persisted Chrome profile to
+// Pinterest's login; the session sticks, so this is only needed when a board
+// sits behind the "Log in to see more" wall (private / your-own boards) or after
+// you've logged out. Capture reuses the same profile.
+const LOGIN_COMMAND = `cd ${CAPTURE_DIR}\nnpm run login`;
 
 // Recover the board URL from a queued Pinterest entry's placeholder body.
 function pinBoardUrl(rawText: string): string | null {
@@ -136,6 +151,7 @@ export default function Admin() {
   const [essenceQueue, setEssenceQueue] = useState<EssenceItem[]>([]);
   const [pendingFollows, setPendingFollows] = useState<PendingFollow[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [chats, setChats] = useState<ChatQuestion[]>([]);
   const [adminPassword, setAdminPassword] = useState("");
   const [loading, setLoading] = useState(true);
   // True only until the first load settles. Refreshes after that keep the page
@@ -147,9 +163,10 @@ export default function Admin() {
     setLoading(true);
     setErr("");
     try {
-      const [res, convRes] = await Promise.all([
+      const [res, convRes, chatRes] = await Promise.all([
         fetch("/api/admin/pending"),
         fetch("/api/admin/discord"),
+        fetch("/api/admin/chat"),
       ]);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to load.");
@@ -159,9 +176,11 @@ export default function Admin() {
       setEssenceQueue(data.essenceQueue ?? []);
       setPendingFollows(data.pendingFollows ?? []);
       setAdminPassword(data.adminPassword ?? "");
-      // Conversations are best-effort: a failure here shouldn't blank the console.
+      // Conversations + chats are best-effort: a failure here shouldn't blank the console.
       const convData = await convRes.json().catch(() => ({}));
       setConversations(convRes.ok ? (convData.questions ?? []) : []);
+      const chatData = await chatRes.json().catch(() => ({}));
+      setChats(chatRes.ok ? (chatData.questions ?? []) : []);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Failed to load.");
     } finally {
@@ -213,6 +232,15 @@ export default function Admin() {
             )}
             {conversations.map((c) => (
               <ConversationCard key={c.id} item={c} onSent={load} />
+            ))}
+          </Section>
+
+          <Section title="Constellation chats" count={chats.length}>
+            {chats.length === 0 && (
+              <Empty>No one is chatting about their constellation right now.</Empty>
+            )}
+            {chats.map((c) => (
+              <ChatCard key={c.id} item={c} onSent={load} />
             ))}
           </Section>
 
@@ -460,6 +488,8 @@ function PendingCard({
         <div style={{ marginTop: 10 }}>
           <p style={hint}>Capture the board locally (screenshots open when it finishes):</p>
           <BridgeBlock command={captureCommand(boardUrl)} run={{ kind: "pinterest", params: { boardUrl } }} />
+          <p style={hint}>Behind a login wall? Sign in once first — the session sticks:</p>
+          <BridgeBlock command={LOGIN_COMMAND} />
         </div>
       )}
 
@@ -778,6 +808,8 @@ function PinterestQueue({ onQueued }: { onQueued: () => void }) {
             screenshots into claude.ai with &ldquo;{PROMPT}&rdquo; and Refresh:
           </p>
           <BridgeBlock command={captureCommand(queued.url)} run={{ kind: "pinterest", params: { boardUrl: queued.url } }} />
+          <p style={hint}>Behind a login wall? Sign in once first — the session sticks:</p>
+          <BridgeBlock command={LOGIN_COMMAND} />
         </div>
       )}
     </section>
@@ -1030,6 +1062,61 @@ function ConversationCard({ item, onSent }: { item: Conversation; onSent: () => 
       )}
 
       <p style={hint}>Paste Opus&apos;s reply, then send it as a Discord reply:</p>
+      <textarea
+        value={reply}
+        onChange={(e) => setReply(e.target.value)}
+        style={{ ...ta, height: 120, fontFamily: "var(--sans)", fontSize: 14 }}
+        placeholder="the reply…"
+      />
+      <button onClick={send} disabled={!reply.trim() || busy} style={btn}>
+        {busy ? "Sending…" : "Send reply"}
+      </button>
+      {err && <p style={{ color: "var(--red)" }}>{err}</p>}
+    </section>
+  );
+}
+
+// An on-platform chat message: the owner asking about their own world (readings
+// + essence). Surfaces the question + a Copy-ready context bundle Ethan pastes
+// into claude.ai; he pastes Opus's reply back and Send stores it as the assistant
+// turn, which appears in the owner's chat thread on their constellation page.
+function ChatCard({ item, onSent }: { item: ChatQuestion; onSent: () => void }) {
+  const [reply, setReply] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  async function send() {
+    if (!reply.trim() || busy) return;
+    setBusy(true);
+    setErr("");
+    try {
+      const res = await fetch("/api/admin/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: item.id, content: reply }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Send failed.");
+      onSent();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Send failed.");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section style={card}>
+      <div style={meta}>
+        <Cid id={item.constellationId} /> · {item.readings} readings
+        {item.hasEssence ? " · essence" : ""} · {ago(item.createdAt)} ago
+      </div>
+      <p style={{ margin: "10px 0", fontSize: 15, color: "var(--ink)" }}>{item.content}</p>
+
+      <div style={{ margin: "10px 0" }}>
+        <CopyButton text={item.contextText} label="Copy context for Opus" />
+      </div>
+
+      <p style={hint}>Paste Opus&apos;s reply — it appears in their chat:</p>
       <textarea
         value={reply}
         onChange={(e) => setReply(e.target.value)}
