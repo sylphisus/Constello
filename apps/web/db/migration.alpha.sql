@@ -54,15 +54,13 @@ alter table entries add column if not exists source text not null default 'text'
 create index if not exists entries_constellation_idx on entries(constellation_id);
 
 -- A collection is global-unique by its identity, so the same one never spawns a
--- second constellation (the app routes a duplicate to the existing one; these
--- are the DB backstop against the race window). The identity mirrors
--- lib/collections/entries.findDuplicateEntry: the API sources (lastfm, twitter)
--- carry it in their deterministic label, matched case-insensitively; text has no
--- reliable label, so the pasted body is the identity (md5 keeps the index within
--- btree's row-size limit). Assumes no pre-existing duplicates in the table.
-create unique index if not exists entries_label_uniq
-  on entries (source, lower(label))
-  where source in ('lastfm', 'twitter', 'pinterest');
+-- second constellation (the app routes a duplicate to the existing one; this is
+-- the DB backstop against the race window the pre-insert guard can't close).
+-- 'text' has no reliable label, so the pasted body itself is the identity (md5
+-- keeps the index within btree's row-size limit). The label-identity sources
+-- (lastfm, twitter, …) are deduped by the separate `entries_label_uniq` index in
+-- db/migration.collections.sql; 'images'/'apple-notes' carry no global identity
+-- and are intentionally not constrained. Assumes no pre-existing text dupes.
 create unique index if not exists entries_text_uniq
   on entries (md5(raw_text))
   where source = 'text';

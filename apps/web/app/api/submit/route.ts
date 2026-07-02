@@ -71,8 +71,20 @@ export async function POST(req: Request) {
     .insert({ constellation_id: constellationId, label, raw_text: rawText })
     .select("id")
     .single();
-  if (entryErr || !entry)
+  if (entryErr || !entry) {
+    // The unique backstop (entries_text_uniq) caught a race the pre-insert guard
+    // missed: re-run the lookup and route to the winner.
+    if (entryErr?.code === "23505") {
+      const won = await findDuplicateEntry(db, "text", label, rawText);
+      if (won)
+        return NextResponse.json({
+          constellationId: won.constellationId,
+          entryId: won.id,
+          duplicate: true,
+        });
+    }
     return NextResponse.json({ error: "Could not save entry." }, { status: 502 });
+  }
 
   return NextResponse.json({ constellationId, entryId: entry.id });
 }
